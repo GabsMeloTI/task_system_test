@@ -11,116 +11,111 @@ import (
 	"net/http"
 )
 
-func GetSecao(w http.ResponseWriter, r *http.Request) {
-	var secoes []models.Secao
-	var secoesDTO []section_dto.ListagemSecaoDTO
+func GetSections(w http.ResponseWriter, r *http.Request) {
+	var sections []models.Section
+	var sectionsDTO []section_dto.SectionListingDTO
 
-	db.DB.Preload("Projeto").Preload("Usuario").Find(&secoes)
+	db.DB.Preload("Project").Preload("User").Find(&sections)
 
-	for _, secao := range secoes {
-		secaoDTO := section_dto.ListagemSecaoDTO{
-			ID:          secao.ID,
-			Nome:        secao.Nome,
-			Descricao:   secao.Descricao,
-			DataCriacao: secao.DataCriacao,
-			UsuarioDTO: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   secao.Usuario.ID,
-				Nome: secao.Usuario.Nome,
+	for _, section := range sections {
+		sectionDTO := section_dto.SectionListingDTO{
+			ID:          section.ID,
+			Title:       section.Title,
+			Description: section.Description,
+			CreatedAt:   section.CreatedAt,
+			User: user_dto.UserBasicDTO{
+				ID:   section.User.ID,
+				Name: section.User.Name,
 			},
-			ProjetoDTO: project_dto.ListagemBasicaProjetoDTO{
-				ID:     secao.Projeto.ID,
-				Nome:   secao.Projeto.Nome,
-				Status: secao.Projeto.Status,
+			Project: project_dto.ProjectBasicDTO{
+				ID:     section.Project.ID,
+				Title:  section.Project.Title,
+				Status: section.Project.Status,
 			},
 		}
-		secoesDTO = append(secoesDTO, secaoDTO)
+		sectionsDTO = append(sectionsDTO, sectionDTO)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(secoesDTO)
+	json.NewEncoder(w).Encode(sectionsDTO)
 }
 
-func GetSecaoId(w http.ResponseWriter, r *http.Request) {
+func GetSectionByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var secoes []models.Secao
-	var secoesDTO []section_dto.ListagemSecaoDTO
+	var section models.Section
 
-	err := db.DB.Preload("Projeto").Preload("Usuario").First(&secoes, params["id"]).Error
+	err := db.DB.Preload("Project").Preload("User").First(&section, params["id"]).Error
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "Section not found", http.StatusNotFound)
 		return
 	}
 
-	for _, secao := range secoes {
-		secaoDTO := section_dto.ListagemSecaoDTO{
-			ID:          secao.ID,
-			Nome:        secao.Nome,
-			Descricao:   secao.Descricao,
-			DataCriacao: secao.DataCriacao,
-			UsuarioDTO: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   secao.Usuario.ID,
-				Nome: secao.Usuario.Nome,
-			},
-			ProjetoDTO: project_dto.ListagemBasicaProjetoDTO{
-				ID:     secao.Projeto.ID,
-				Nome:   secao.Projeto.Nome,
-				Status: secao.Projeto.Status,
-			},
-		}
-		secoesDTO = append(secoesDTO, secaoDTO)
+	sectionDTO := section_dto.SectionListingDTO{
+		ID:          section.ID,
+		Title:       section.Title,
+		Description: section.Description,
+		CreatedAt:   section.CreatedAt,
+		User: user_dto.UserBasicDTO{
+			ID:   section.User.ID,
+			Name: section.User.Name,
+		},
+		Project: project_dto.ProjectBasicDTO{
+			ID:     section.Project.ID,
+			Title:  section.Project.Title,
+			Status: section.Project.Status,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(secoesDTO)
+	json.NewEncoder(w).Encode(sectionDTO)
 }
 
-func CreateSecao(w http.ResponseWriter, r *http.Request) {
-	var secao models.Secao
+func CreateSection(w http.ResponseWriter, r *http.Request) {
+	var section models.Section
 
-	err := json.NewDecoder(r.Body).Decode(&secao)
+	err := json.NewDecoder(r.Body).Decode(&section)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	err = db.DB.Create(&secao).Error
+	err = db.DB.Create(&section).Error
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error creating section", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateSecao(w http.ResponseWriter, r *http.Request) {
+func UpdateSection(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var secao models.Secao
+	var section models.Section
 
-	err := db.DB.First(&secao, params["id"]).Error
+	err := db.DB.First(&section, params["id"]).Error
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "Section not found", http.StatusNotFound)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&secao)
+	err = json.NewDecoder(r.Body).Decode(&section)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	db.DB.Save(&secao)
-
+	db.DB.Save(&section)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteSecao(w http.ResponseWriter, r *http.Request) {
+func DeleteSection(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	err := db.DB.Delete(&models.Secao{}, params["id"]).Error
+	err := db.DB.Delete(&models.Section{}, params["id"]).Error
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error deleting section", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -14,181 +14,194 @@ import (
 	"strconv"
 )
 
-func GetTarefa(w http.ResponseWriter, r *http.Request) {
-	var tarefas []models.Tarefa
-	var tarefasDto []task_dto.ListagemTarefasDTO
+func GetTasks(w http.ResponseWriter, r *http.Request) {
+	var tasks []models.Task
+	var tasksDTO []task_dto.TaskListingDTO
 
-	// Carregar todas as associações
-	err := db.DB.Preload("Usuario").Preload("Secao").Preload("Etiquetas").Find(&tarefas).Error
+	err := db.DB.Preload("User").Preload("Section").Preload("Labels").Find(&tasks).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for _, tarefa := range tarefas {
-		log.Printf("Tarefa: %+v\n", tarefa) // Log para verificar os dados carregados
+	for _, task := range tasks {
+		log.Printf("Task: %+v\n", task) // Log for debugging
 
-		var etiquetasDTO []label_dto.ListagemEtiquetaDTO
-		for _, etiqueta := range tarefa.Etiquetas {
-			log.Printf("Etiqueta: %+v\n", etiqueta) // Log para verificar as etiquetas
-			etiquetasDTO = append(etiquetasDTO, label_dto.ListagemEtiquetaDTO{
-				ID:   etiqueta.ID,
-				Nome: etiqueta.Nome,
-				Cor:  etiqueta.Cor,
+		var labelsDTO []label_dto.LabelListingDTO
+		for _, label := range task.Labels {
+			log.Printf("Label: %+v\n", label) // Log for debugging
+			labelsDTO = append(labelsDTO, label_dto.LabelListingDTO{
+				ID:    label.ID,
+				Name:  label.Name,
+				Color: label.Color,
 			})
 		}
 
-		tarefasDto = append(tarefasDto, task_dto.ListagemTarefasDTO{
-			ID:                    tarefa.ID,
-			Nome:                  tarefa.Nome,
-			Descricao:             tarefa.Descricao,
-			DataConclusaoPrevista: tarefa.DataConclusaoPrevista,
-			Prioridade:            tarefa.Prioridade,
-			CreatedAt:             task.CreatedAt,
-			Status:                tarefa.Status,
-			Etiquetas:             etiquetasDTO,
-			UsuarioDTO: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   tarefa.Usuario.ID,
-				Nome: tarefa.Usuario.Nome,
+		tasksDTO = append(tasksDTO, task_dto.TaskListingDTO{
+			ID:                 task.ID,
+			Title:              task.Title,
+			Description:        task.Description,
+			ExpectedCompletion: task.ExpectedCompletion,
+			Priority:           task.Priority,
+			CreatedAt:          task.CreatedAt,
+			Status:             task.Status,
+			Labels:             labelsDTO,
+			User: user_dto.UserBasicDTO{
+				ID:   task.User.ID,
+				Name: task.User.Name,
 			},
-			SecaoDTO: section_dto.ListagemBasicaSecaoDTO{
-				ID:   tarefa.Secao.ID,
-				Nome: tarefa.Secao.Nome,
+			Section: section_dto.SectionBasicDTO{
+				ID:    task.Section.ID,
+				Title: task.Section.Title,
 			},
 		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tarefasDto)
+	json.NewEncoder(w).Encode(tasksDTO)
 }
 
-func GetTarefasId(w http.ResponseWriter, r *http.Request) {
+func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var tarefas []models.Tarefa
-	var tarefasDto []task_dto.ListagemTarefasDTO
+	var task models.Task
 
-	err := db.DB.Preload("Usuario").Preload("Secao").First(&tarefas, params["id"]).Error
+	err := db.DB.Preload("User").Preload("Section").First(&task, params["id"]).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	for _, tarefa := range tarefas {
-		var etiquetasDTO []label_dto.ListagemEtiquetaDTO
-		for _, etiqueta := range tarefa.Etiquetas {
-			etiquetasDTO = append(etiquetasDTO, label_dto.ListagemEtiquetaDTO{
-				ID:   etiqueta.ID,
-				Nome: etiqueta.Nome,
-				Cor:  etiqueta.Cor,
-			})
-		}
-
-		tarefasDto = append(tarefasDto, task_dto.ListagemTarefasDTO{
-			ID:                    tarefa.ID,
-			Nome:                  tarefa.Nome,
-			Descricao:             tarefa.Descricao,
-			DataConclusaoPrevista: tarefa.DataConclusaoPrevista,
-			Prioridade:            tarefa.Prioridade,
-			CreatedAt:             task.CreatedAt,
-			Status:                tarefa.Status,
-			Etiquetas:             etiquetasDTO,
-			UsuarioDTO: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   tarefa.Usuario.ID,
-				Nome: tarefa.Usuario.Nome,
-			},
-			SecaoDTO: section_dto.ListagemBasicaSecaoDTO{
-				ID:   tarefa.Secao.ID,
-				Nome: tarefa.Secao.Nome,
-			},
+	var labelsDTO []label_dto.LabelListingDTO
+	for _, label := range task.Labels {
+		labelsDTO = append(labelsDTO, label_dto.LabelListingDTO{
+			ID:    label.ID,
+			Name:  label.Name,
+			Color: label.Color,
 		})
 	}
 
+	taskDTO := task_dto.TaskListingDTO{
+		ID:                 task.ID,
+		Title:              task.Title,
+		Description:        task.Description,
+		ExpectedCompletion: task.ExpectedCompletion,
+		Priority:           task.Priority,
+		CreatedAt:          task.CreatedAt,
+		Status:             task.Status,
+		Labels:             labelsDTO,
+		User: user_dto.UserBasicDTO{
+			ID:   task.User.ID,
+			Name: task.User.Name,
+		},
+		Section: section_dto.SectionBasicDTO{
+			ID:    task.Section.ID,
+			Title: task.Section.Title,
+		},
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tarefasDto)
+	json.NewEncoder(w).Encode(taskDTO)
 }
 
-func CreateTarefa(w http.ResponseWriter, r *http.Request) {
-	var tarefa models.Tarefa
+func CreateTask(w http.ResponseWriter, r *http.Request) {
+	var task models.Task
 
-	err := json.NewDecoder(r.Body).Decode(&tarefa)
+	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	if err := models.ValidarPrioridadeError(tarefa.Prioridade); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	userID := task.UserID
+	sectionID := task.SectionID
+
+	var user models.User
+	var section models.Section
+
+	err = db.DB.First(&user, userID).Error
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	err = db.DB.Create(&tarefa).Error
+	err = db.DB.First(&section, sectionID).Error
 	if err != nil {
-		http.Error(w, "Erro ao criar tarefa", http.StatusInternalServerError)
+		http.Error(w, "Section not found", http.StatusNotFound)
+		return
+	}
+
+	task.User = user
+	task.Section = section
+
+	err = db.DB.Create(&task).Error
+	if err != nil {
+		http.Error(w, "Error creating task", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func AddEtiquetaToTarefa(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tarefaID, err := strconv.Atoi(vars["tarefa_id"])
-	if err != nil {
-		http.Error(w, "Invalid task ID", http.StatusBadRequest)
-		return
-	}
-
-	var etiqueta models.Etiqueta
-	err = json.NewDecoder(r.Body).Decode(&etiqueta)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var tarefa models.Tarefa
-	err = db.DB.First(&tarefa, tarefaID).Error
-	if err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-
-	err = db.DB.Model(&tarefa).Association("Etiquetas").Append(&etiqueta).Error
-	if err != nil {
-		http.Error(w, "Failed to add label to task", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tarefa)
-}
-
-func UpdateTarefa(w http.ResponseWriter, r *http.Request) {
+func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var tarefas models.Tarefa
+	var task models.Task
 
-	err := db.DB.First(&tarefas, params["id"]).Error
+	err := db.DB.First(&task, params["id"]).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&tarefas)
+	err = json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	db.DB.Save(&tarefas)
+	db.DB.Save(&task)
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteTarefa(w http.ResponseWriter, r *http.Request) {
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	err := db.DB.Delete(&models.Tarefa{}, params["id"]).Error
+	err := db.DB.Delete(&models.Task{}, params["id"]).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func AssignLabelsToTask(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	taskID, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	var task models.Task
+	err = db.DB.Preload("Labels").First(&task, taskID).Error
+	if err != nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	var labels []models.Label
+	err = json.NewDecoder(r.Body).Decode(&labels)
+	if err != nil {
+		http.Error(w, "Invalid data", http.StatusBadRequest)
+		return
+	}
+
+	task.Labels = labels
+
+	err = db.DB.Save(&task).Error
+	if err != nil {
+		http.Error(w, "Error assigning labels", http.StatusInternalServerError)
 		return
 	}
 

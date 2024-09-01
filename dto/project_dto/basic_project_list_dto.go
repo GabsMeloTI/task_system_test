@@ -2,6 +2,6 @@ package project_dto
 
 type ProjectBasicDTO struct {
 	ID     uint   `json:"id"`
-	Name   string `json:"name"`
+	Title  string `json:"title"`
 	Status string `json:"status"`
 }

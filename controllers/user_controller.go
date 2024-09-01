@@ -12,174 +12,166 @@ import (
 	"time"
 )
 
-var jwtKey = []byte("sua_chave_secreta")
+var jwtKey = []byte("your_secret_key")
 
-// lista todos os usuários.
-func GetUsuarios(w http.ResponseWriter, r *http.Request) {
-	var usuarios []models.Usuario
-	db.DB.Preload("Projetos").Find(&usuarios)
+func GetUsers(w http.ResponseWriter, r *http.Request) {
+	var users []models.User
+	db.DB.Preload("Projects").Find(&users)
 
-	var usuariosDTO []user_dto.ListagemUsuarioDTO
-
-	for _, usuario := range usuarios {
-		usuarioDTO := user_dto.ListagemUsuarioDTO{
-			ID:            usuario.ID,
-			Nome:          usuario.Nome,
-			Email:         usuario.Email,
-			Foto:          usuario.Foto,
-			DataCriacao:   usuario.DataCriacao,
-			ProjetosCount: len(usuario.Projetos),
+	var usersDTO []user_dto.UserListingDTO
+	for _, user := range users {
+		userDTO := user_dto.UserListingDTO{
+			ID:           user.ID,
+			Name:         user.Name,
+			Email:        user.Email,
+			Photo:        user.Avatar,
+			CreatedAt:    user.CreatedAt,
+			ProjectCount: len(user.Projects),
 		}
-		usuariosDTO = append(usuariosDTO, usuarioDTO)
+		usersDTO = append(usersDTO, userDTO)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(usuariosDTO)
+	json.NewEncoder(w).Encode(usersDTO)
 }
 
-// lista usuário puxando pelo id.
-func GetUsuarioId(w http.ResponseWriter, r *http.Request) {
+func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var usuario models.Usuario
-	err := db.DB.Preload("Projetos").First(&usuario, params["id"]).Error
+	var user models.User
+	err := db.DB.Preload("Projects").First(&user, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	usuarioDTO := user_dto.ListagemUsuarioDTO{
-		ID:            usuario.ID,
-		Nome:          usuario.Nome,
-		Email:         usuario.Email,
-		Foto:          usuario.Foto,
-		DataCriacao:   usuario.DataCriacao,
-		ProjetosCount: len(usuario.Projetos),
+	userDTO := user_dto.UserListingDTO{
+		ID:           user.ID,
+		Name:         user.Name,
+		Email:        user.Email,
+		Photo:        user.Avatar,
+		CreatedAt:    user.CreatedAt,
+		ProjectCount: len(user.Projects),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(usuarioDTO)
+	json.NewEncoder(w).Encode(userDTO)
 }
 
-// criar um usuario - ok = 201
-func CreateUsuario(w http.ResponseWriter, r *http.Request) {
-	var usuario models.Usuario
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
 
-	err := json.NewDecoder(r.Body).Decode(&usuario)
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	var existingUsuario models.Usuario
-	if err := db.DB.Where("email = ?", usuario.Email).First(&existingUsuario).Error; err == nil {
-		http.Error(w, "Email já cadastrado", http.StatusConflict)
+	var existingUser models.User
+	if err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+		http.Error(w, "Email already registered", http.StatusConflict)
 		return
 	}
 
-	hashedPassword, err := utils.HashSenha(usuario.Senha)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		http.Error(w, "Erro ao criptografar senha", http.StatusInternalServerError)
+		http.Error(w, "Error encrypting password", http.StatusInternalServerError)
 		return
 	}
-	usuario.Senha = hashedPassword
+	user.Password = hashedPassword
 
-	err = db.DB.Create(&usuario).Error
+	err = db.DB.Create(&user).Error
 	if err != nil {
-		http.Error(w, "Erro ao criar usuário", http.StatusInternalServerError)
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-// atualiza dados do usuario, ok = 204
-func UpdateUsuario(w http.ResponseWriter, r *http.Request) {
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var usuario models.Usuario
+	var user models.User
 
-	err := db.DB.First(&usuario, params["id"]).Error
+	err := db.DB.First(&user, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Usuário não encontrado", http.StatusNotFound)
+		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&usuario)
+	err = json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	db.DB.Save(&usuario)
+	db.DB.Save(&user)
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// excluir usuario
-func DeleteUsuario(w http.ResponseWriter, r *http.Request) {
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	err := db.DB.Delete(&models.Usuario{}, params["id"]).Error
+	err := db.DB.Delete(&models.User{}, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Erro ao deletar usuário", http.StatusInternalServerError)
+		http.Error(w, "Error deleting user", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Registro de usuário - ok = 201
-func RegisterUsuario(w http.ResponseWriter, r *http.Request) {
-	var usuario models.Usuario
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
 
-	err := json.NewDecoder(r.Body).Decode(&usuario)
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	var existingUsuario models.Usuario
-	if err := db.DB.Where("email = ?", usuario.Email).First(&existingUsuario).Error; err == nil {
-		http.Error(w, "Email já cadastrado", http.StatusConflict)
+	var existingUser models.User
+	if err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+		http.Error(w, "Email already registered", http.StatusConflict)
 		return
 	}
 
-	hashedPassword, err := utils.HashSenha(usuario.Senha)
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		http.Error(w, "Erro ao criptografar senha", http.StatusInternalServerError)
+		http.Error(w, "Error encrypting password", http.StatusInternalServerError)
 		return
 	}
-	usuario.Senha = hashedPassword
+	user.Password = hashedPassword
 
-	err = db.DB.Create(&usuario).Error
+	err = db.DB.Create(&user).Error
 	if err != nil {
-		http.Error(w, "Erro ao criar usuário", http.StatusInternalServerError)
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-// Login do usuário - ok = 200
 func Login(w http.ResponseWriter, r *http.Request) {
 	var creds struct {
-		Email string `json:"email"`
-		Senha string `json:"senha"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	var usuario models.Usuario
-	err = db.DB.Where("email = ?", creds.Email).First(&usuario).Error
-	if err != nil || !utils.VerificarSenha(usuario.Senha, creds.Senha) {
-		http.Error(w, "Credenciais inválidas", http.StatusUnauthorized)
+	var user models.User
+	err = db.DB.Where("email = ?", creds.Email).First(&user).Error
+	if err != nil || !utils.ComparePasswords(user.Password, creds.Password) {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &utils.Claims{
+	claims := &utils.JWTClaims{
 		Email: creds.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
@@ -189,7 +181,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		http.Error(w, "Erro ao gerar token", http.StatusInternalServerError)
+		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 

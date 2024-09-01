@@ -10,110 +10,100 @@ import (
 	"net/http"
 )
 
-// lista todos os projetos.
-func GetProjetos(w http.ResponseWriter, r *http.Request) {
-	var projetos []models.Projeto
-	var projetosDTO []project_dto.ListagemProjetoDTO
+func GetProjects(w http.ResponseWriter, r *http.Request) {
+	var projects []models.Project
+	var projectsDTO []project_dto.ProjectListingDTO
 
-	db.DB.Preload("Usuario").Find(&projetos)
+	db.DB.Preload("User").Find(&projects)
 
-	for _, projeto := range projetos {
-		projetoDTO := project_dto.ListagemProjetoDTO{
-			ID:        projeto.ID,
-			Nome:      projeto.Nome,
-			Descricao: projeto.Descricao,
-			Status:    projeto.Status,
-			Data:      projeto.DataCriacao,
-			Usuario: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   projeto.Usuario.ID,
-				Nome: projeto.Usuario.Nome,
+	for _, project := range projects {
+		projectDTO := project_dto.ProjectListingDTO{
+			ID:          project.ID,
+			Title:       project.Title,
+			Description: project.Description,
+			Status:      project.Status,
+			CreatedAt:   project.CreatedAt,
+			User: user_dto.UserBasicDTO{
+				ID:   project.User.ID,
+				Name: project.User.Name,
 			},
 		}
-		projetosDTO = append(projetosDTO, projetoDTO)
+		projectsDTO = append(projectsDTO, projectDTO)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(projetosDTO)
+	json.NewEncoder(w).Encode(projectsDTO)
 }
 
-// retorna um projeto específico por id.
-func GetProjetoId(w http.ResponseWriter, r *http.Request) {
+func GetProjectByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var projetos []models.Projeto
-	var projetosDTO []project_dto.ListagemProjetoDTO
+	var project models.Project
 
-	err := db.DB.Preload("Usuario").First(&projetos, params["id"]).Error
+	err := db.DB.Preload("User").First(&project, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Projeto não encontrado", http.StatusNotFound)
+		http.Error(w, "Project not found", http.StatusNotFound)
 		return
 	}
 
-	for _, projeto := range projetos {
-		projetoDTO := project_dto.ListagemProjetoDTO{
-			ID:        projeto.ID,
-			Nome:      projeto.Nome,
-			Descricao: projeto.Descricao,
-			Status:    projeto.Status,
-			Data:      projeto.DataCriacao,
-			Usuario: user_dto.ListagemBasicaUsuarioDTO{
-				ID:   projeto.Usuario.ID,
-				Nome: projeto.Usuario.Nome,
-			},
-		}
-		projetosDTO = append(projetosDTO, projetoDTO)
+	projectDTO := project_dto.ProjectListingDTO{
+		ID:          project.ID,
+		Title:       project.Title,
+		Description: project.Description,
+		Status:      project.Status,
+		CreatedAt:   project.CreatedAt,
+		User: user_dto.UserBasicDTO{
+			ID:   project.User.ID,
+			Name: project.User.Name,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(projetosDTO)
+	json.NewEncoder(w).Encode(projectDTO)
 }
 
-// cria um novo projeto.
-func CreateProjeto(w http.ResponseWriter, r *http.Request) {
-	var projeto models.Projeto
+func CreateProject(w http.ResponseWriter, r *http.Request) {
+	var project models.Project
 
-	err := json.NewDecoder(r.Body).Decode(&projeto)
+	err := json.NewDecoder(r.Body).Decode(&project)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	err = db.DB.Create(&projeto).Error
+	err = db.DB.Create(&project).Error
 	if err != nil {
-		http.Error(w, "Erro ao criar projeto", http.StatusInternalServerError)
+		http.Error(w, "Error creating project", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-// UpdateProjeto atualiza os dados de um projeto existente.
-func UpdateProjeto(w http.ResponseWriter, r *http.Request) {
+func UpdateProject(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var projeto models.Projeto
+	var project models.Project
 
-	err := db.DB.First(&projeto, params["id"]).Error
+	err := db.DB.First(&project, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Projeto não encontrado", http.StatusNotFound)
+		http.Error(w, "Project not found", http.StatusNotFound)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&projeto)
+	err = json.NewDecoder(r.Body).Decode(&project)
 	if err != nil {
-		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	db.DB.Save(&projeto)
-
+	db.DB.Save(&project)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// DeleteProjeto exclui um projeto existente.
-func DeleteProjeto(w http.ResponseWriter, r *http.Request) {
+func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	err := db.DB.Delete(&models.Projeto{}, params["id"]).Error
+	err := db.DB.Delete(&models.Project{}, params["id"]).Error
 	if err != nil {
-		http.Error(w, "Erro ao deletar projeto", http.StatusInternalServerError)
+		http.Error(w, "Error deleting project", http.StatusInternalServerError)
 		return
 	}
 

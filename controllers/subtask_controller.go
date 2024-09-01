@@ -10,71 +10,66 @@ import (
 	"net/http"
 )
 
-func GetSubtarefa(w http.ResponseWriter, r *http.Request) {
-	var subtarefa []models.Subtarefa
+func GetSubtasks(w http.ResponseWriter, r *http.Request) {
+	var subtasks []models.Subtask
 
-	db.DB.Preload("Tarefas").Find(&subtarefa)
+	db.DB.Preload("Task").Find(&subtasks)
 
-	var subtarefasDto []subtask_dto.ListagemSubtarefasDTO
-
-	for _, subtarefa := range subtarefa {
-		subtarefasDto = append(subtarefasDto, subtask_dto.ListagemSubtarefasDTO{
-			ID:          subtarefa.ID,
-			Nome:        subtarefa.Nome,
-			Descricao:   subtarefa.Descricao,
-			DataCriacao: subtarefa.DataCriacao,
-			Status:      subtarefa.Status,
-			TarefaDto: task_dto.ListagemBasicaTarefasDTO{
-				ID:   subtarefa.Tarefa.ID,
-				Nome: subtarefa.Tarefa.Nome,
+	var subtasksDTO []subtask_dto.SubtaskListingDTO
+	for _, subtask := range subtasks {
+		subtasksDTO = append(subtasksDTO, subtask_dto.SubtaskListingDTO{
+			ID:          subtask.ID,
+			Title:       subtask.Title,
+			Description: subtask.Description,
+			CreatedAt:   subtask.CreatedAt,
+			Status:      subtask.Status,
+			Task: task_dto.TaskBasicDTO{
+				ID:    subtask.Task.ID,
+				Title: subtask.Task.Title,
 			},
 		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subtarefasDto)
+	json.NewEncoder(w).Encode(subtasksDTO)
 }
 
-func GetSubtarefasId(w http.ResponseWriter, r *http.Request) {
+func GetSubtaskByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var subtarefa []models.Subtarefa
+	var subtask models.Subtask
 
-	err := db.DB.Preload("Tarefas").First(&subtarefa, params["id"]).Error
+	err := db.DB.Preload("Task").First(&subtask, params["id"]).Error
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	var subtarefasDto []subtask_dto.ListagemSubtarefasDTO
-
-	for _, subtarefa := range subtarefa {
-		subtarefasDto = append(subtarefasDto, subtask_dto.ListagemSubtarefasDTO{
-			ID:          subtarefa.ID,
-			Nome:        subtarefa.Nome,
-			Descricao:   subtarefa.Descricao,
-			DataCriacao: subtarefa.DataCriacao,
-			Status:      subtarefa.Status,
-			TarefaDto: task_dto.ListagemBasicaTarefasDTO{
-				ID:   subtarefa.Tarefa.ID,
-				Nome: subtarefa.Tarefa.Nome,
-			},
-		})
+	subtaskDTO := subtask_dto.SubtaskListingDTO{
+		ID:          subtask.ID,
+		Title:       subtask.Title,
+		Description: subtask.Description,
+		CreatedAt:   subtask.CreatedAt,
+		Status:      subtask.Status,
+		Task: task_dto.TaskBasicDTO{
+			ID:    subtask.Task.ID,
+			Title: subtask.Task.Title,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subtarefasDto)
+	json.NewEncoder(w).Encode(subtaskDTO)
 }
 
-func CreateSubtarefa(w http.ResponseWriter, r *http.Request) {
-	var subtarefa models.Subtarefa
+func CreateSubtask(w http.ResponseWriter, r *http.Request) {
+	var subtask models.Subtask
 
-	err := json.NewDecoder(r.Body).Decode(&subtarefa)
+	err := json.NewDecoder(r.Body).Decode(&subtask)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = db.DB.Create(&subtarefa).Error
+	err = db.DB.Create(&subtask).Error
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -83,34 +78,34 @@ func CreateSubtarefa(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateSubtarefa(w http.ResponseWriter, r *http.Request) {
+func UpdateSubtask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var subtarefa models.Subtarefa
+	var subtask models.Subtask
 
-	err := db.DB.First(&subtarefa, params["id"]).Error
+	err := db.DB.First(&subtask, params["id"]).Error
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&subtask)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&subtarefa)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	db.DB.Save(&subtarefa)
-	w.WriteHeader(http.StatusCreated)
+	db.DB.Save(&subtask)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteSubtarefa(w http.ResponseWriter, r *http.Request) {
+func DeleteSubtask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	err := db.DB.Delete(&models.Subtarefa{}, params["id"]).Error
+	err := db.DB.Delete(&models.Subtask{}, params["id"]).Error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

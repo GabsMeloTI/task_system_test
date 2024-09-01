@@ -8,7 +8,7 @@ import (
 
 type SectionListingDTO struct {
 	ID          uint                        `json:"id"`
-	Name        string                      `json:"name"`
+	Title       string                      `json:"title"`
 	Description string                      `json:"description"`
 	CreatedAt   time.Time                   `json:"created_at"`
 	User        user_dto.UserBasicDTO       `json:"user"`

@@ -9,17 +9,17 @@ import (
 // registra as rotas relacionadas a usuários
 func ProjectRoutes(r *mux.Router) {
 	// retorna todos os projeto
-	r.HandleFunc("/project", controllers.GetProjetos).Methods("GET")
+	r.HandleFunc("/project", controllers.GetProjects).Methods("GET")
 
 	// retorna projeto específico por id
-	r.HandleFunc("/project/{id:[0-9]+}", controllers.GetProjetoId).Methods("GET")
+	r.HandleFunc("/project/{id:[0-9]+}", controllers.GetProjectByID).Methods("GET")
 
 	// criar um novo projeto
-	r.HandleFunc("/project", controllers.CreateProjeto).Methods("POST")
+	r.HandleFunc("/project", controllers.CreateProject).Methods("POST")
 
 	// atualiza projeto existente por id
-	r.HandleFunc("/project/{id:[0-9]+}", controllers.UpdateProjeto).Methods("PUT")
+	r.HandleFunc("/project/{id:[0-9]+}", controllers.UpdateProject).Methods("PUT")
 
 	// deletar um projeto existente por id
-	r.HandleFunc("/project/{id:[0-9]+}", controllers.DeleteProjeto).Methods("DELETE")
+	r.HandleFunc("/project/{id:[0-9]+}", controllers.DeleteProject).Methods("DELETE")
 }

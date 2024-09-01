@@ -6,6 +6,6 @@ import (
 
 type TaskBasicDTO struct {
 	ID       uint            `json:"id"`
-	Name     string          `json:"name"`
+	Title    string          `json:"title"`
 	Priority models.Priority `json:"priority"`
 }

@@ -8,20 +8,20 @@ import (
 // registra as rotas relacionadas a usuários
 func TaskRoutes(r *mux.Router) {
 	// retorna todos os usuários
-	r.HandleFunc("/task", controllers.GetTarefa).Methods("GET")
+	r.HandleFunc("/task", controllers.GetTasks).Methods("GET")
 
 	// retorna usuário específico por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.GetTarefasId).Methods("GET")
+	r.HandleFunc("/task/{id:[0-9]+}", controllers.GetTaskByID).Methods("GET")
 
 	// criar um novo usuário
-	r.HandleFunc("/task", controllers.CreateTarefa).Methods("POST")
+	r.HandleFunc("/task", controllers.CreateTask).Methods("POST")
 
 	// criar um novo usuário
-	r.HandleFunc("/task/{id:[0-9]+}/label", controllers.AddEtiquetaToTarefa).Methods("POST")
+	r.HandleFunc("/task/{id:[0-9]+}/label", controllers.AssignLabelsToTask).Methods("POST")
 
 	// atualiza usuário existente por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.UpdateTarefa).Methods("PUT")
+	r.HandleFunc("/task/{id:[0-9]+}", controllers.UpdateTask).Methods("PUT")
 
 	// deletar um usuário existente por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.DeleteTarefa).Methods("DELETE")
+	r.HandleFunc("/task/{id:[0-9]+}", controllers.DeleteTask).Methods("DELETE")
 }

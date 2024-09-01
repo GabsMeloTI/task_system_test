@@ -1,6 +1,6 @@
 package section_dto
 
 type SectionBasicDTO struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID    uint   `json:"id"`
+	Title string `json:"title"`
 }

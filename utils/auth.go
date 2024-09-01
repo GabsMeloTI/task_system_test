@@ -1,43 +1,53 @@
 package utils
 
 import (
+	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
-func HashSenha(senha string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(senha), 14)
-	return string(bytes), err
+// HashPassword hashes a given password using bcrypt.
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
 }
 
-func VerificarSenha(senhaHash, senha string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(senhaHash), []byte(senha))
+// ComparePasswords compares a hashed password with a plain password to check if they match.
+func ComparePasswords(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
 }
 
-var jwtKey = []byte("sua_chave_secreta")
+var jwtSecretKey = []byte("your_secret_key")
 
-// Claims estrutura para os dados do token
-type Claims struct {
+// JWTClaims represents the claims in the JWT token.
+type JWTClaims struct {
 	Email string `json:"email"`
 	jwt.StandardClaims
 }
 
-// Autenticado verifica se o usuário está autenticado
-func Autenticado(r *http.Request) (*Claims, error) {
+// IsAuthenticated checks if the user is authenticated based on the JWT token.
+func IsAuthenticated(r *http.Request) (*JWTClaims, error) {
 	cookie, err := r.Cookie("token")
+	if err != nil {
+		return nil, errors.New("authentication token not found")
+	}
+
+	tokenStr := cookie.Value
+	claims := &JWTClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecretKey, nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	tokenStr := cookie.Value
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if err != nil || !token.Valid {
-		return nil, err
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
 
 	return claims, nil
