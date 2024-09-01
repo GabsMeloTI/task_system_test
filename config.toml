@@ -1,0 +1,9 @@
+[api]
+port = "8081"
+
+[database]
+host = "localhost"
+port = "5432"
+user = "postgres"
+pass = "091104"
+database = "postgres"
