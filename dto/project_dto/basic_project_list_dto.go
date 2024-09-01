@@ -1,7 +1,7 @@
 package project_dto
 
-type ListagemBasicaProjetoDTO struct {
+type ProjectBasicDTO struct {
 	ID     uint   `json:"id"`
-	Nome   string `json:"ds_nome"`
+	Name   string `json:"name"`
 	Status string `json:"status"`
 }

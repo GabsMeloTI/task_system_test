@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-type ListagemSecaoDTO struct {
-	ID          uint                                 `json:"id"`
-	Nome        string                               `json:"ds_nome"`
-	Descricao   string                               `json:"ds_descricao"`
-	DataCriacao time.Time                            `json:"ds_data_criacao"`
-	UsuarioDTO  user_dto.ListagemBasicaUsuarioDTO    `json:"usuario"`
-	ProjetoDTO  project_dto.ListagemBasicaProjetoDTO `json:"projeto"`
+type SectionListingDTO struct {
+	ID          uint                        `json:"id"`
+	Name        string                      `json:"name"`
+	Description string                      `json:"description"`
+	CreatedAt   time.Time                   `json:"created_at"`
+	User        user_dto.UserBasicDTO       `json:"user"`
+	Project     project_dto.ProjectBasicDTO `json:"project"`
 }

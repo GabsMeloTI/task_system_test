@@ -1,6 +1,6 @@
 package user_dto
 
-type ListagemBasicaUsuarioDTO struct {
+type UserBasicDTO struct {
 	ID   uint   `json:"id"`
-	Nome string `json:"nome"`
+	Name string `json:"name"`
 }

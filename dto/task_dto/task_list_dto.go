@@ -8,15 +8,15 @@ import (
 	"time"
 )
 
-type ListagemTarefasDTO struct {
-	ID                    uint                               `json:"id"`
-	Nome                  string                             `json:"ds_nome"`
-	Descricao             string                             `json:"ds_descricao"`
-	DataConclusaoPrevista time.Time                          `json:"dt_conclusao_prevista"`
-	Prioridade            models.Prioridade                  `json:"ds_prioridade"`
-	CreatedAt             time.Time                          `json:"created_at"`
-	Status                string                             `json:"ds_status"`
-	Etiquetas             []label_dto.ListagemEtiquetaDTO    `json:"etiquetas"`
-	UsuarioDTO            user_dto.ListagemBasicaUsuarioDTO  `json:"id_usuario"`
-	SecaoDTO              section_dto.ListagemBasicaSecaoDTO `json:"id_secao"`
+type TaskListingDTO struct {
+	ID                  uint                        `json:"id"`
+	Name                string                      `json:"name"`
+	Description         string                      `json:"description"`
+	EstimatedCompletion time.Time                   `json:"estimated_completion_date"`
+	Priority            models.Priority             `json:"priority"`
+	CreatedAt           time.Time                   `json:"created_at"`
+	Status              string                      `json:"status"`
+	Labels              []label_dto.LabelListingDTO `json:"labels"`
+	User                user_dto.UserBasicDTO       `json:"user"`
+	Section             section_dto.SectionBasicDTO `json:"section"`
 }

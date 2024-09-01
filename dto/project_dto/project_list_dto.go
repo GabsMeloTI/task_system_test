@@ -1,15 +1,12 @@
 package project_dto
 
-import (
-	"awesomeProject/dto/user_dto"
-	"time"
-)
+import "time"
 
-type ListagemProjetoDTO struct {
-	ID        uint                              `json:"id"`
-	Nome      string                            `json:"ds_nome"`
-	Descricao string                            `json:"ds_descricao"`
-	Status    string                            `json:"ds_status"`
-	Data      time.Time                         `json:"data"`
-	Usuario   user_dto.ListagemBasicaUsuarioDTO `json:"usuario"`
+type ProjectListingDTO struct {
+	ID          uint                  `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Status      string                `json:"status"`
+	CreatedAt   time.Time             `json:"created_at"`
+	User        user_dto.UserBasicDTO `json:"user"`
 }

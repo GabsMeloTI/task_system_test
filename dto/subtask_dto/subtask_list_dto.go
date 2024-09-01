@@ -1,15 +1,14 @@
 package subtask_dto
 
 import (
-	"awesomeProject/dto/task_dto"
 	"time"
 )
 
-type ListagemSubtarefasDTO struct {
-	ID          uint                              `json:"id"`
-	Nome        string                            `json:"ds_nome"`
-	Descricao   string                            `json:"ds_descricao"`
-	DataCriacao time.Time                         `json:"dt_criacao"`
-	Status      string                            `json:"ds_status"`
-	TarefaDto   task_dto.ListagemBasicaTarefasDTO `json:"tarefas"`
+type SubtaskListingDTO struct {
+	ID          uint         `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	CreatedAt   time.Time    `json:"created_at"`
+	Status      string       `json:"status"`
+	Task        TaskBasicDTO `json:"task"`
 }
