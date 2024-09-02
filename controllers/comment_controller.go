@@ -1,84 +1,72 @@
 package controllers
 
 import (
-	"awesomeProject/db"
-	"awesomeProject/dto/comment_dto"
-	"awesomeProject/dto/task_dto"
-	"awesomeProject/dto/user_dto"
-	"awesomeProject/models"
+	"awesomeProject/service"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
-func GetComments(w http.ResponseWriter, r *http.Request) {
-	var comments []models.Comment
-	var commentsDTO []comment_dto.CommentListingDTO
+type CommentController struct {
+	Service *service.CommentService
+}
 
-	if err := db.DB.Preload("User").Preload("Task").Find(&comments).Error; err != nil {
+func (c *CommentController) GetComments(w http.ResponseWriter, r *http.Request) {
+	commentsDTO, err := c.Service.GetAllComments()
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	for _, comment := range comments {
-		commentDTO := comment_dto.CommentListingDTO{
-			ID:          comment.ID,
-			Content:     comment.Content,
-			PublishedAt: comment.PublishedAt,
-			ImageURL:    comment.Image,
-			User: user_dto.UserBasicDTO{
-				ID:   comment.User.ID,
-				Name: comment.User.Name,
-			},
-			Task: task_dto.TaskBasicDTO{
-				ID:    comment.Task.ID,
-				Title: comment.Task.Title,
-			},
-		}
-		commentsDTO = append(commentsDTO, commentDTO)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(commentsDTO)
 }
 
-func GetCommentByID(w http.ResponseWriter, r *http.Request) {
+func (c *CommentController) GetCommentByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var comment models.Comment
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.Preload("User").Preload("Task").First(&comment, params["id"]).Error; err != nil {
+	commentDTO, err := c.Service.GetCommentByID(uint(id))
+	if err != nil {
 		http.Error(w, "Comment not found", http.StatusNotFound)
 		return
-	}
-
-	commentDTO := comment_dto.CommentListingDTO{
-		ID:          comment.ID,
-		Content:     comment.Content,
-		PublishedAt: comment.PublishedAt,
-		ImageURL:    comment.Image,
-		User: user_dto.UserBasicDTO{
-			ID:   comment.User.ID,
-			Name: comment.User.Name,
-		},
-		Task: task_dto.TaskBasicDTO{
-			ID:    comment.Task.ID,
-			Title: comment.Task.Title,
-		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(commentDTO)
 }
 
-func CreateComment(w http.ResponseWriter, r *http.Request) {
-	var comment models.Comment
-
-	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
+func (c *CommentController) CreateComment(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
 		return
 	}
 
-	if err := db.DB.Create(&comment).Error; err != nil {
+	content := r.FormValue("content")
+	file, fileHeader, err := r.FormFile("image")
+	if err != nil {
+		if err == http.ErrMissingFile {
+			file = nil
+			fileHeader = nil
+		} else {
+			http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+			return
+		}
+	}
+
+	var imageURL string
+	if file != nil && fileHeader != nil {
+		imageURL, err = c.Service.UploadToS3(file, fileHeader.Filename)
+		if err != nil {
+			http.Error(w, "Error uploading image", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	err = c.Service.CreateComment(content, imageURL)
+	if err != nil {
 		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
 		return
 	}
@@ -86,21 +74,23 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateComment(w http.ResponseWriter, r *http.Request) {
+func (c *CommentController) UpdateComment(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var comment models.Comment
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.First(&comment, params["id"]).Error; err != nil {
-		http.Error(w, "Comment not found", http.StatusNotFound)
-		return
+	var requestBody struct {
+		Content  string `json:"content"`
+		ImageURL string `json:"image_url"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
 		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	if err := db.DB.Save(&comment).Error; err != nil {
+	err = c.Service.UpdateComment(uint(id), requestBody.Content, requestBody.ImageURL)
+	if err != nil {
 		http.Error(w, "Failed to update comment", http.StatusInternalServerError)
 		return
 	}
@@ -108,10 +98,12 @@ func UpdateComment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteComment(w http.ResponseWriter, r *http.Request) {
+func (c *CommentController) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.Delete(&models.Comment{}, params["id"]).Error; err != nil {
+	err := c.Service.DeleteComment(uint(id))
+	if err != nil {
 		http.Error(w, "Failed to delete comment", http.StatusInternalServerError)
 		return
 	}

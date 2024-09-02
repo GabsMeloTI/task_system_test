@@ -1,76 +1,44 @@
 package controllers
 
 import (
-	"awesomeProject/db"
-	"awesomeProject/dto/project_dto"
-	"awesomeProject/dto/section_dto"
-	"awesomeProject/dto/user_dto"
 	"awesomeProject/models"
+	"awesomeProject/service"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
-func GetSections(w http.ResponseWriter, r *http.Request) {
-	var sections []models.Section
-	var sectionsDTO []section_dto.SectionListingDTO
+type SectionController struct {
+	Service service.SectionService
+}
 
-	db.DB.Preload("Project").Preload("User").Find(&sections)
-
-	for _, section := range sections {
-		sectionDTO := section_dto.SectionListingDTO{
-			ID:          section.ID,
-			Title:       section.Title,
-			Description: section.Description,
-			CreatedAt:   section.CreatedAt,
-			User: user_dto.UserBasicDTO{
-				ID:   section.User.ID,
-				Name: section.User.Name,
-			},
-			Project: project_dto.ProjectBasicDTO{
-				ID:     section.Project.ID,
-				Title:  section.Project.Title,
-				Status: section.Project.Status,
-			},
-		}
-		sectionsDTO = append(sectionsDTO, sectionDTO)
+func (c *SectionController) GetSections(w http.ResponseWriter, r *http.Request) {
+	sections, err := c.Service.GetSections()
+	if err != nil {
+		http.Error(w, "Error fetching sections", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sectionsDTO)
+	json.NewEncoder(w).Encode(sections)
 }
 
-func GetSectionByID(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) GetSectionByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var section models.Section
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	err := db.DB.Preload("Project").Preload("User").First(&section, params["id"]).Error
+	section, err := c.Service.GetSectionByID(uint(id))
 	if err != nil {
 		http.Error(w, "Section not found", http.StatusNotFound)
 		return
 	}
 
-	sectionDTO := section_dto.SectionListingDTO{
-		ID:          section.ID,
-		Title:       section.Title,
-		Description: section.Description,
-		CreatedAt:   section.CreatedAt,
-		User: user_dto.UserBasicDTO{
-			ID:   section.User.ID,
-			Name: section.User.Name,
-		},
-		Project: project_dto.ProjectBasicDTO{
-			ID:     section.Project.ID,
-			Title:  section.Project.Title,
-			Status: section.Project.Status,
-		},
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sectionDTO)
+	json.NewEncoder(w).Encode(section)
 }
 
-func CreateSection(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) CreateSection(w http.ResponseWriter, r *http.Request) {
 	var section models.Section
 
 	err := json.NewDecoder(r.Body).Decode(&section)
@@ -79,7 +47,7 @@ func CreateSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.DB.Create(&section).Error
+	err = c.Service.CreateSection(section)
 	if err != nil {
 		http.Error(w, "Error creating section", http.StatusInternalServerError)
 		return
@@ -88,30 +56,31 @@ func CreateSection(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateSection(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) UpdateSection(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
+
 	var section models.Section
-
-	err := db.DB.First(&section, params["id"]).Error
-	if err != nil {
-		http.Error(w, "Section not found", http.StatusNotFound)
-		return
-	}
-
-	err = json.NewDecoder(r.Body).Decode(&section)
+	err := json.NewDecoder(r.Body).Decode(&section)
 	if err != nil {
 		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	db.DB.Save(&section)
+	err = c.Service.UpdateSection(uint(id), section)
+	if err != nil {
+		http.Error(w, "Error updating section", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteSection(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) DeleteSection(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	err := db.DB.Delete(&models.Section{}, params["id"]).Error
+	err := c.Service.DeleteSection(uint(id))
 	if err != nil {
 		http.Error(w, "Error deleting section", http.StatusInternalServerError)
 		return

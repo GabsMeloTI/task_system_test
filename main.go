@@ -17,14 +17,14 @@ func main() {
 
 	db.InitGorm()
 
-	if err := db.DB.AutoMigrate(&models.Usuario{}, &models.Projeto{}, &models.Secao{},
-		&models.Tarefa{}, &models.Subtarefa{}, &models.Comentario{}, &models.Etiqueta{}).Error; err != nil {
+	if err := db.DB.AutoMigrate(&models.User{}, &models.Project{}, &models.Section{},
+		&models.Task{}, &models.Subtask{}, &models.Comment{}, &models.Label{}).Error; err != nil {
 		log.Fatalf("Erro ao migrar as tabelas: %v", err)
 	}
 
 	r := mux.NewRouter()
 	routes.RegisterRoutes(r)
 
-	log.Println("Iniciando o servidor na porta 8080...")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Println("Iniciando o servidor na porta 8000...")
+	log.Fatal(http.ListenAndServe(":8000", r))
 }

@@ -1,109 +1,44 @@
 package controllers
 
 import (
-	"awesomeProject/db"
-	"awesomeProject/dto/label_dto"
-	"awesomeProject/dto/section_dto"
-	"awesomeProject/dto/task_dto"
-	"awesomeProject/dto/user_dto"
 	"awesomeProject/models"
+	"awesomeProject/service"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-func GetTasks(w http.ResponseWriter, r *http.Request) {
-	var tasks []models.Task
-	var tasksDTO []task_dto.TaskListingDTO
+type TaskController struct {
+	Service *service.TaskService
+}
 
-	err := db.DB.Preload("User").Preload("Section").Preload("Labels").Find(&tasks).Error
+func (c *TaskController) GetTasks(w http.ResponseWriter, r *http.Request) {
+	tasksDTO, err := c.Service.GetAllTasks()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	for _, task := range tasks {
-		log.Printf("Task: %+v\n", task) // Log for debugging
-
-		var labelsDTO []label_dto.LabelListingDTO
-		for _, label := range task.Labels {
-			log.Printf("Label: %+v\n", label) // Log for debugging
-			labelsDTO = append(labelsDTO, label_dto.LabelListingDTO{
-				ID:    label.ID,
-				Name:  label.Name,
-				Color: label.Color,
-			})
-		}
-
-		tasksDTO = append(tasksDTO, task_dto.TaskListingDTO{
-			ID:                 task.ID,
-			Title:              task.Title,
-			Description:        task.Description,
-			ExpectedCompletion: task.ExpectedCompletion,
-			Priority:           task.Priority,
-			CreatedAt:          task.CreatedAt,
-			Status:             task.Status,
-			Labels:             labelsDTO,
-			User: user_dto.UserBasicDTO{
-				ID:   task.User.ID,
-				Name: task.User.Name,
-			},
-			Section: section_dto.SectionBasicDTO{
-				ID:    task.Section.ID,
-				Title: task.Section.Title,
-			},
-		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasksDTO)
 }
 
-func GetTaskByID(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var task models.Task
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	err := db.DB.Preload("User").Preload("Section").First(&task, params["id"]).Error
+	taskDTO, err := c.Service.GetTaskByID(uint(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
-	}
-
-	var labelsDTO []label_dto.LabelListingDTO
-	for _, label := range task.Labels {
-		labelsDTO = append(labelsDTO, label_dto.LabelListingDTO{
-			ID:    label.ID,
-			Name:  label.Name,
-			Color: label.Color,
-		})
-	}
-
-	taskDTO := task_dto.TaskListingDTO{
-		ID:                 task.ID,
-		Title:              task.Title,
-		Description:        task.Description,
-		ExpectedCompletion: task.ExpectedCompletion,
-		Priority:           task.Priority,
-		CreatedAt:          task.CreatedAt,
-		Status:             task.Status,
-		Labels:             labelsDTO,
-		User: user_dto.UserBasicDTO{
-			ID:   task.User.ID,
-			Name: task.User.Name,
-		},
-		Section: section_dto.SectionBasicDTO{
-			ID:    task.Section.ID,
-			Title: task.Section.Title,
-		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(taskDTO)
 }
 
-func CreateTask(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 
 	err := json.NewDecoder(r.Body).Decode(&task)
@@ -112,61 +47,27 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := task.UserID
-	sectionID := task.SectionID
-
-	var user models.User
-	var section models.Section
-
-	err = db.DB.First(&user, userID).Error
+	err = c.Service.CreateTask(task)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	err = db.DB.First(&section, sectionID).Error
-	if err != nil {
-		http.Error(w, "Section not found", http.StatusNotFound)
-		return
-	}
-
-	task.User = user
-	task.Section = section
-
-	err = db.DB.Create(&task).Error
-	if err != nil {
-		http.Error(w, "Error creating task", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
+
 	var task models.Task
-
-	err := db.DB.First(&task, params["id"]).Error
+	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	err = json.NewDecoder(r.Body).Decode(&task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	db.DB.Save(&task)
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func DeleteTask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	err := db.DB.Delete(&models.Task{}, params["id"]).Error
+	err = c.Service.UpdateTask(uint(id), task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -175,35 +76,35 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func AssignLabelsToTask(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	taskID, err := strconv.Atoi(params["id"])
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
+
+	err := c.Service.DeleteTask(uint(id))
 	if err != nil {
-		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var task models.Task
-	err = db.DB.Preload("Labels").First(&task, taskID).Error
-	if err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *TaskController) AssignLabelsToTask(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	taskID, _ := strconv.ParseUint(params["task_id"], 10, 32)
 
 	var labels []models.Label
-	err = json.NewDecoder(r.Body).Decode(&labels)
+	err := json.NewDecoder(r.Body).Decode(&labels)
 	if err != nil {
 		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	task.Labels = labels
-
-	err = db.DB.Save(&task).Error
+	err = c.Service.AssignLabelsToTask(uint(taskID), labels)
 	if err != nil {
-		http.Error(w, "Error assigning labels", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

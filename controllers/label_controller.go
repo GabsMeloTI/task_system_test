@@ -1,56 +1,44 @@
 package controllers
 
 import (
-	"awesomeProject/db"
-	"awesomeProject/dto/label_dto"
 	"awesomeProject/models"
+	"awesomeProject/service"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
-func GetLabels(w http.ResponseWriter, r *http.Request) {
-	var labels []models.Label
-	var labelsDTO []label_dto.LabelListingDTO
+type LabelController struct {
+	Service *service.LabelService
+}
 
-	if err := db.DB.Preload("Task").Find(&labels).Error; err != nil {
+func (c *LabelController) GetLabels(w http.ResponseWriter, r *http.Request) {
+	labelsDTO, err := c.Service.GetAllLabels()
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	for _, label := range labels {
-		labelDTO := label_dto.LabelListingDTO{
-			ID:    label.ID,
-			Name:  label.Name,
-			Color: label.Color,
-		}
-		labelsDTO = append(labelsDTO, labelDTO)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(labelsDTO)
 }
 
-func GetLabelByID(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) GetLabelByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var label models.Label
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.Preload("Task").First(&label, params["id"]).Error; err != nil {
+	labelDTO, err := c.Service.GetLabelByID(uint(id))
+	if err != nil {
 		http.Error(w, "Label not found", http.StatusNotFound)
 		return
-	}
-
-	labelDTO := label_dto.LabelListingDTO{
-		ID:    label.ID,
-		Name:  label.Name,
-		Color: label.Color,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(labelDTO)
 }
 
-func CreateLabel(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) CreateLabel(w http.ResponseWriter, r *http.Request) {
 	var label models.Label
 
 	if err := json.NewDecoder(r.Body).Decode(&label); err != nil {
@@ -58,7 +46,8 @@ func CreateLabel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := db.DB.Create(&label).Error; err != nil {
+	err := c.Service.CreateLabel(label)
+	if err != nil {
 		http.Error(w, "Failed to create label", http.StatusInternalServerError)
 		return
 	}
@@ -66,21 +55,19 @@ func CreateLabel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func UpdateLabel(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) UpdateLabel(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var label models.Label
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.First(&label, params["id"]).Error; err != nil {
-		http.Error(w, "Label not found", http.StatusNotFound)
-		return
-	}
+	var label models.Label
 
 	if err := json.NewDecoder(r.Body).Decode(&label); err != nil {
 		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
-	if err := db.DB.Save(&label).Error; err != nil {
+	err := c.Service.UpdateLabel(uint(id), label)
+	if err != nil {
 		http.Error(w, "Failed to update label", http.StatusInternalServerError)
 		return
 	}
@@ -88,10 +75,12 @@ func UpdateLabel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteLabel(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) DeleteLabel(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	id, _ := strconv.ParseUint(params["id"], 10, 32)
 
-	if err := db.DB.Delete(&models.Label{}, params["id"]).Error; err != nil {
+	err := c.Service.DeleteLabel(uint(id))
+	if err != nil {
 		http.Error(w, "Failed to delete label", http.StatusInternalServerError)
 		return
 	}
