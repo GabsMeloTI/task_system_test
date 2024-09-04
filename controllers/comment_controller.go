@@ -63,7 +63,7 @@ func (c *CommentController) GetCommentByID(ctx echo.Context) error {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /comment [post]
 func (c *CommentController) CreateComment(ctx echo.Context) error {
-	err := ctx.Request().ParseMultipartForm(10 << 20) // Limit to 10 MB
+	err := ctx.Request().ParseMultipartForm(10 << 20) // Limite de 10 MB
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Error parsing form"})
 	}
@@ -78,7 +78,7 @@ func (c *CommentController) CreateComment(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid task ID"})
 	}
 
-	file, fileHeader, err := ctx.FormFile("image")
+	file, fileHeader, err := ctx.Request().FormFile("image")
 	var imageURL string
 	if err != nil && err.Error() != "http: no such file" {
 		log.Printf("Error getting file: %v", err)
@@ -91,7 +91,6 @@ func (c *CommentController) CreateComment(ctx echo.Context) error {
 	}()
 
 	if file != nil && fileHeader != nil {
-		// Upload the image to S3
 		imageURL, err = service.UploadFileToS3(file, fileHeader.Filename)
 		if err != nil {
 			log.Printf("Error uploading file to S3: %v", err)
