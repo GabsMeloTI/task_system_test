@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/models"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -22,15 +21,13 @@ type SubtaskController struct {
 // @Success 200 {array} task_dto.TaskBasicDTO
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /subtask [get]
-func (c *SubtaskController) GetSubtasks(w http.ResponseWriter, r *http.Request) {
+func (c *SubtaskController) GetSubtasks(ctx echo.Context) error {
 	subtasksDTO, err := c.Service.GetAllSubtasks()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subtasksDTO)
+	return ctx.JSON(http.StatusOK, subtasksDTO)
 }
 
 // GetSubtaskByID retrieves a subtask by its ID
@@ -43,18 +40,15 @@ func (c *SubtaskController) GetSubtasks(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {array} task_dto.TaskBasicDTO
 // @Failure 404 {string} string "Subtask not found"
 // @Router /subtask/{id} [get]
-func (c *SubtaskController) GetSubtaskByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *SubtaskController) GetSubtaskByID(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	subtaskDTO, err := c.Service.GetSubtaskByID(uint(id))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subtaskDTO)
+	return ctx.JSON(http.StatusOK, subtaskDTO)
 }
 
 // CreateSubtask creates a new subtask
@@ -68,22 +62,18 @@ func (c *SubtaskController) GetSubtaskByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /subtask [post]
-func (c *SubtaskController) CreateSubtask(w http.ResponseWriter, r *http.Request) {
+func (c *SubtaskController) CreateSubtask(ctx echo.Context) error {
 	var subtask models.Subtask
 
-	err := json.NewDecoder(r.Body).Decode(&subtask)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&subtask); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data"})
 	}
 
-	err = c.Service.CreateSubtask(subtask)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.CreateSubtask(subtask); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.JSON(http.StatusCreated, "Subtask created successfully")
 }
 
 // UpdateSubtask updates an existing subtask
@@ -98,24 +88,19 @@ func (c *SubtaskController) CreateSubtask(w http.ResponseWriter, r *http.Request
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /subtask/{id} [put]
-func (c *SubtaskController) UpdateSubtask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *SubtaskController) UpdateSubtask(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	var subtask models.Subtask
-	err := json.NewDecoder(r.Body).Decode(&subtask)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&subtask); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data"})
 	}
 
-	err = c.Service.UpdateSubtask(uint(id), subtask)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.UpdateSubtask(uint(id), subtask); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteSubtask deletes a subtask by its ID
@@ -126,15 +111,12 @@ func (c *SubtaskController) UpdateSubtask(w http.ResponseWriter, r *http.Request
 // @Success 204 "Subtask deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /subtask/{id} [delete]
-func (c *SubtaskController) DeleteSubtask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *SubtaskController) DeleteSubtask(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
-	err := c.Service.DeleteSubtask(uint(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.DeleteSubtask(uint(id)); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }

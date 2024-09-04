@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/dto/comment_dto"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
 	"strconv"
@@ -20,19 +19,14 @@ type CommentController struct {
 // @Tags comments
 // @Produce json
 // @Success 200 {object} comment_dto.CommentListingDTO
-// @Success 200 {array} task_dto.TaskBasicDTO
-// @Success 200 {array} user_dto.UserBasicDTO
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /comment [get]
-func (c *CommentController) GetComments(w http.ResponseWriter, r *http.Request) {
+func (c *CommentController) GetComments(ctx echo.Context) error {
 	commentsDTO, err := c.Service.GetAllComments()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(commentsDTO)
+	return ctx.JSON(http.StatusOK, commentsDTO)
 }
 
 // GetCommentByID retrieves a comment by its ID
@@ -42,22 +36,16 @@ func (c *CommentController) GetComments(w http.ResponseWriter, r *http.Request) 
 // @Produce json
 // @Param id path string true "Comment ID"
 // @Success 200 {object} comment_dto.CommentListingDTO
-// @Success 200 {array} task_dto.TaskBasicDTO
-// @Success 200 {array} user_dto.UserBasicDTO
 // @Failure 404 {string} string "Comment not found"
 // @Router /comment/{id} [get]
-func (c *CommentController) GetCommentByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *CommentController) GetCommentByID(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	commentDTO, err := c.Service.GetCommentByID(uint(id))
 	if err != nil {
-		http.Error(w, "Comment not found", http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Comment not found"})
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(commentDTO)
+	return ctx.JSON(http.StatusOK, commentDTO)
 }
 
 // CreateComment creates a new comment
@@ -74,35 +62,27 @@ func (c *CommentController) GetCommentByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /comment [post]
-func (c *CommentController) CreateComment(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // Limit to 10 MB
+func (c *CommentController) CreateComment(ctx echo.Context) error {
+	err := ctx.Request().ParseMultipartForm(10 << 20) // Limit to 10 MB
 	if err != nil {
-		http.Error(w, "Error parsing form", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Error parsing form"})
 	}
 
-	content := r.FormValue("content")
-	userID, err := strconv.ParseUint(r.FormValue("user_id"), 10, 32)
+	content := ctx.FormValue("content")
+	userID, err := strconv.ParseUint(ctx.FormValue("user_id"), 10, 32)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid user ID"})
 	}
-	taskID, err := strconv.ParseUint(r.FormValue("task_id"), 10, 32)
+	taskID, err := strconv.ParseUint(ctx.FormValue("task_id"), 10, 32)
 	if err != nil {
-		http.Error(w, "Invalid task ID", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid task ID"})
 	}
 
-	file, fileHeader, err := r.FormFile("image")
-	if err != nil {
-		if err.Error() == "http: no such file" {
-			file = nil
-			fileHeader = nil
-		} else {
-			log.Printf("Error getting file: %v", err)
-			http.Error(w, "Error getting file", http.StatusBadRequest)
-			return
-		}
+	file, fileHeader, err := ctx.FormFile("image")
+	var imageURL string
+	if err != nil && err.Error() != "http: no such file" {
+		log.Printf("Error getting file: %v", err)
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Error getting file"})
 	}
 	defer func() {
 		if file != nil {
@@ -110,14 +90,12 @@ func (c *CommentController) CreateComment(w http.ResponseWriter, r *http.Request
 		}
 	}()
 
-	var imageURL string
 	if file != nil && fileHeader != nil {
 		// Upload the image to S3
 		imageURL, err = service.UploadFileToS3(file, fileHeader.Filename)
 		if err != nil {
 			log.Printf("Error uploading file to S3: %v", err)
-			http.Error(w, "Error uploading image", http.StatusInternalServerError)
-			return
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Error uploading image"})
 		}
 		log.Printf("Image successfully uploaded to S3. URL: %s", imageURL)
 	}
@@ -125,13 +103,10 @@ func (c *CommentController) CreateComment(w http.ResponseWriter, r *http.Request
 	err = c.Service.CreateComment(content, imageURL, int(userID), int(taskID))
 	if err != nil {
 		log.Printf("Error creating comment: %v", err)
-		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create comment"})
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Comment created successfully"))
-	log.Println("Comment created successfully")
+	return ctx.JSON(http.StatusCreated, "Comment created successfully")
 }
 
 // UpdateComment updates an existing comment
@@ -146,25 +121,20 @@ func (c *CommentController) CreateComment(w http.ResponseWriter, r *http.Request
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /comment/{id} [put]
-func (c *CommentController) UpdateComment(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *CommentController) UpdateComment(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	var requestBody comment_dto.UpdateCommentRequestDTO
-
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&requestBody); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data"})
 	}
 
-	err = c.Service.UpdateComment(uint(id), requestBody.Content, requestBody.ImageURL)
+	err := c.Service.UpdateComment(uint(id), requestBody.Content, requestBody.ImageURL)
 	if err != nil {
-		http.Error(w, "Failed to update comment", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update comment"})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteComment deletes a comment by its ID
@@ -175,15 +145,13 @@ func (c *CommentController) UpdateComment(w http.ResponseWriter, r *http.Request
 // @Success 204 "Comment deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /comment/{id} [delete]
-func (c *CommentController) DeleteComment(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *CommentController) DeleteComment(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	err := c.Service.DeleteComment(uint(id))
 	if err != nil {
-		http.Error(w, "Failed to delete comment", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete comment"})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }

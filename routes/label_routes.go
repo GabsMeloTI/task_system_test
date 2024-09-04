@@ -3,19 +3,19 @@ package routes
 import (
 	"awesomeProject/controllers"
 	"awesomeProject/service"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func LabelRoutes(r *mux.Router, db *gorm.DB) {
+func LabelRoutes(e *echo.Echo, db *gorm.DB) {
 	labelService := service.NewLabelService(db)
 	labelController := &controllers.LabelController{
 		Service: labelService,
 	}
 
-	r.HandleFunc("/label", labelController.GetLabels).Methods("GET")
-	r.HandleFunc("/label/{id:[0-9]+}", labelController.GetLabelByID).Methods("GET")
-	r.HandleFunc("/label", labelController.CreateLabel).Methods("POST")
-	r.HandleFunc("/label/{id:[0-9]+}", labelController.UpdateLabel).Methods("PUT")
-	r.HandleFunc("/label/{id:[0-9]+}", labelController.DeleteLabel).Methods("DELETE")
+	e.GET("/label", labelController.GetLabels)
+	e.GET("/label/:id", labelController.GetLabelByID)
+	e.POST("/label", labelController.CreateLabel)
+	e.PUT("/label/:id", labelController.UpdateLabel)
+	e.DELETE("/label/:id", labelController.DeleteLabel)
 }

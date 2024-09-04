@@ -4,7 +4,7 @@ import (
 	"awesomeProject/models"
 	"awesomeProject/service"
 	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -25,20 +25,18 @@ func NewUserController(svc service.UserService) *UserController {
 // @Description Retorna uma lista de usuários
 // @Tags users
 // @Produce json
-// @Success 200 {array} user_dto.UserListingDTO
+// @Success 200 {array} models.User
 // @Failure 500 {string} string "Erro interno do servidor"
 // @Router /user [get]
-func (c *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) GetUsers(ctx echo.Context) error {
 	log.Println("Chamando GetUsers")
 	users, err := c.Service.GetUsers()
 	if err != nil {
 		log.Printf("Erro ao obter usuários: %v", err)
-		http.Error(w, "Failed to get users", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, "Failed to get users")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	return ctx.JSON(http.StatusOK, users)
 }
 
 // GetUserByID retorna um usuário por ID
@@ -47,20 +45,18 @@ func (c *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Produce json
 // @Param id path string true "ID do Usuário"
-// @Success 200 {array} user_dto.UserListingDTO
+// @Success 200 {object} models.User
 // @Failure 404 {string} string "Usuário não encontrado"
 // @Router /user/{id} [get]
-func (c *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+func (c *UserController) GetUserByID(ctx echo.Context) error {
+	id := ctx.Param("id")
 
 	user, err := c.Service.GetUserByID(id)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, "User not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	return ctx.JSON(http.StatusOK, user)
 }
 
 // CreateUser cria um novo usuário
@@ -76,24 +72,23 @@ func (c *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {string} string "Usuário criado com sucesso"
 // @Failure 400 {string} string "Erro na solicitação"
 // @Router /user [post]
-func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
+func (c *UserController) CreateUser(ctx echo.Context) error {
+	err := ctx.Request().ParseMultipartForm(10 << 20)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	var file multipart.File
 	var fileName string
-	if f, _, err := r.FormFile("avatar"); err == nil {
+	if f, _, err := ctx.Request().FormFile("avatar"); err == nil {
 		defer f.Close()
 		file = f
-		fileName = r.MultipartForm.File["avatar"][0].Filename
+		fileName = ctx.Request().MultipartForm.File["avatar"][0].Filename
 	}
 
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+	name := ctx.FormValue("name")
+	email := ctx.FormValue("email")
+	password := ctx.FormValue("password")
 
 	user := models.User{
 		Name:     name,
@@ -103,11 +98,10 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = c.Service.CreateUser(&user, file, fileName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 // UpdateUser atualiza os dados de um usuário
@@ -125,26 +119,25 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Erro na solicitação"
 // @Failure 500 {string} string "Erro interno do servidor"
 // @Router /user/{id} [put]
-func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+func (c *UserController) UpdateUser(ctx echo.Context) error {
+	id := ctx.Param("id")
 
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+	err := ctx.Request().ParseMultipartForm(10 << 20) // 10 MB limit
 	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Unable to parse form")
 	}
 
 	var imageFile multipart.File
 	var imageFileName string
-	if f, _, err := r.FormFile("avatar"); err == nil {
-		defer f.Close() // Ensure the file is closed after processing
+	if f, _, err := ctx.Request().FormFile("avatar"); err == nil {
+		defer f.Close()
 		imageFile = f
-		imageFileName = r.MultipartForm.File["avatar"][0].Filename
+		imageFileName = ctx.Request().MultipartForm.File["avatar"][0].Filename
 	}
 
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+	name := ctx.FormValue("name")
+	email := ctx.FormValue("email")
+	password := ctx.FormValue("password")
 
 	user := models.User{
 		Name:     name,
@@ -154,11 +147,10 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = c.Service.UpdateUser(id, &user, imageFile, imageFileName)
 	if err != nil {
-		http.Error(w, "Failed to update user", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteUser exclui um usuário
@@ -169,15 +161,14 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "Usuário excluído com sucesso"
 // @Failure 500 {string} string "Erro interno do servidor"
 // @Router /user/{id} [delete]
-func (c *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+func (c *UserController) DeleteUser(ctx echo.Context) error {
+	id := ctx.Param("id")
 
 	if err := c.Service.DeleteUser(id); err != nil {
-		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, "Failed to delete user")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // RegisterUser godoc
@@ -194,16 +185,15 @@ func (c *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid request payload"
 // @Failure 500 {string} string "Failed to register user"
 // @Router /user/register [post]
-func (c *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+func (c *UserController) RegisterUser(ctx echo.Context) error {
+	err := ctx.Request().ParseMultipartForm(10 << 20) // 10 MB limit
 	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Unable to parse form")
 	}
 
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+	name := ctx.FormValue("name")
+	email := ctx.FormValue("email")
+	password := ctx.FormValue("password")
 
 	user := models.User{
 		Name:     name,
@@ -211,21 +201,20 @@ func (c *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	}
 
-	imageFile, _, err := r.FormFile("avatar")
+	imageFile, _, err := ctx.Request().FormFile("avatar")
 	var imageFileName string
 	if err == nil {
 		defer imageFile.Close()
-		imageFileName = r.MultipartForm.File["avatar"][0].Filename
+		imageFileName = ctx.Request().MultipartForm.File["avatar"][0].Filename
 	} else {
 		imageFileName = ""
 	}
 
 	if err := c.Service.RegisterUser(&user, imageFile, imageFileName); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 // Login godoc
@@ -239,26 +228,23 @@ func (c *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid request payload"
 // @Failure 401 {string} string "Unauthorized"
 // @Router /user/login [post]
-func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) Login(ctx echo.Context) error {
 	var credentials models.LoginRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+	if err := json.NewDecoder(ctx.Request().Body).Decode(&credentials); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	token, err := c.Service.Login(credentials.Email, credentials.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
+		return ctx.JSON(http.StatusUnauthorized, err.Error())
 	}
 
 	response := models.AuthResponse{
 		Token: token,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // UpdateUserImage godoc
@@ -273,27 +259,20 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid request payload"
 // @Failure 500 {string} string "Failed to update user image"
 // @Router /user/{id}/avatar [put]
-func (c *UserController) UpdateUserImage(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+func (c *UserController) UpdateUserImage(ctx echo.Context) error {
+	id := ctx.Param("id")
 
-	err := r.ParseMultipartForm(10 << 20) // Limit the size to 10 MB
+	file, fileHeader, err := ctx.Request().FormFile("avatar")
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	file, _, err := r.FormFile("avatar")
-	if err != nil && err != http.ErrMissingFile {
-		http.Error(w, "Error retrieving file", http.StatusBadRequest)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Invalid file")
 	}
 	defer file.Close()
 
-	err = c.Service.UpdateUserImage(id, file, "avatar")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	imageFileName := fileHeader.Filename
+
+	if err := c.Service.UpdateUserImage(id, file, imageFileName); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Failed to update user image")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }

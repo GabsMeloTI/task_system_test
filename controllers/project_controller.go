@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/models"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -13,24 +12,27 @@ type ProjectController struct {
 	Service service.ProjectService
 }
 
+func NewProjectController(svc service.ProjectService) *ProjectController {
+	return &ProjectController{
+		Service: svc,
+	}
+}
+
 // GetProjects retrieves all projects
 // @Summary Get all projects
 // @Description Fetches all projects available in the system
 // @Tags projects
 // @Produce json
-// @Success 200 {object} project_dto.ProjectListingDTO
-// @Success 200 {object} user_dto.UserBasicDTO
+// @Success 200 {object} []models.Project
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /project [get]
-func (c *ProjectController) GetProjects(w http.ResponseWriter, r *http.Request) {
+func (c *ProjectController) GetProjects(ctx echo.Context) error {
 	projects, err := c.Service.GetProjects()
 	if err != nil {
-		http.Error(w, "Error fetching projects", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, "Error fetching projects")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(projects)
+	return ctx.JSON(http.StatusOK, projects)
 }
 
 // GetProjectByID retrieves a project by its ID
@@ -39,22 +41,21 @@ func (c *ProjectController) GetProjects(w http.ResponseWriter, r *http.Request) 
 // @Tags projects
 // @Produce json
 // @Param id path string true "Project ID"
-// @Success 200 {object} project_dto.ProjectListingDTO
-// @Success 200 {object} user_dto.UserBasicDTO
+// @Success 200 {object} models.Project
 // @Failure 404 {string} string "Project not found"
 // @Router /project/{id} [get]
-func (c *ProjectController) GetProjectByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *ProjectController) GetProjectByID(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
+	}
 
 	project, err := c.Service.GetProjectByID(uint(id))
 	if err != nil {
-		http.Error(w, "Project not found", http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, "Project not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(project)
+	return ctx.JSON(http.StatusOK, project)
 }
 
 // CreateProject creates a new project
@@ -68,22 +69,18 @@ func (c *ProjectController) GetProjectByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /project [post]
-func (c *ProjectController) CreateProject(w http.ResponseWriter, r *http.Request) {
+func (c *ProjectController) CreateProject(ctx echo.Context) error {
 	var project models.Project
 
-	err := json.NewDecoder(r.Body).Decode(&project)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&project); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.CreateProject(project)
-	if err != nil {
-		http.Error(w, "Error creating project", http.StatusInternalServerError)
-		return
+	if err := c.Service.CreateProject(project); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error creating project")
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 // UpdateProject updates an existing project
@@ -98,24 +95,22 @@ func (c *ProjectController) CreateProject(w http.ResponseWriter, r *http.Request
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /project/{id} [put]
-func (c *ProjectController) UpdateProject(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *ProjectController) UpdateProject(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
+	}
 
 	var project models.Project
-	err := json.NewDecoder(r.Body).Decode(&project)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&project); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.UpdateProject(uint(id), project)
-	if err != nil {
-		http.Error(w, "Error updating project", http.StatusInternalServerError)
-		return
+	if err := c.Service.UpdateProject(uint(id), project); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error updating project")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteProject deletes a project by its ID
@@ -126,15 +121,15 @@ func (c *ProjectController) UpdateProject(w http.ResponseWriter, r *http.Request
 // @Success 204 "Project deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /project/{id} [delete]
-func (c *ProjectController) DeleteProject(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
-
-	err := c.Service.DeleteProject(uint(id))
+func (c *ProjectController) DeleteProject(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(w, "Error deleting project", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	if err := c.Service.DeleteProject(uint(id)); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error deleting project")
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }

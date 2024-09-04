@@ -3,20 +3,20 @@ package routes
 import (
 	"awesomeProject/controllers"
 	"awesomeProject/service"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func TaskRoutes(r *mux.Router, db *gorm.DB) {
+func TaskRoutes(e *echo.Echo, db *gorm.DB) {
 	taskService := service.NewTaskService(db)
 	taskController := &controllers.TaskController{
-		Service: (*service.TaskService)(taskService),
+		Service: taskService,
 	}
 
-	r.HandleFunc("/task", taskController.GetTasks).Methods("GET")
-	r.HandleFunc("/task/{id:[0-9]+}", taskController.GetTaskByID).Methods("GET")
-	r.HandleFunc("/task", taskController.CreateTask).Methods("POST")
-	r.HandleFunc("/task/{id:[0-9]+}/label", taskController.AssignLabelsToTask).Methods("POST")
-	r.HandleFunc("/task/{id:[0-9]+}", taskController.UpdateTask).Methods("PUT")
-	r.HandleFunc("/task/{id:[0-9]+}", taskController.DeleteTask).Methods("DELETE")
+	e.GET("/task", taskController.GetTasks)
+	e.GET("/task/:id", taskController.GetTaskByID)
+	e.POST("/task", taskController.CreateTask)
+	e.POST("/task/:id/labels", taskController.AssignLabelsToTask)
+	e.PUT("/task/:id", taskController.UpdateTask)
+	e.DELETE("/task/:id", taskController.DeleteTask)
 }

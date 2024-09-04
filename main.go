@@ -5,9 +5,8 @@ import (
 	"awesomeProject/db"
 	_ "awesomeProject/docs"
 	"awesomeProject/routes"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net/http"
 )
@@ -22,16 +21,16 @@ func main() {
 
 	db.MigrateTables()
 
-	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
+	e := echo.New()
 
-	r := mux.NewRouter()
-	routes.RegisterRoutes(r, db.DB)
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
+	}))
+	routes.RegisterRoutes(e, db.DB)
 
-	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	log.Println("Iniciando o servidor na porta 8000...")
 	log.Fatal(http.ListenAndServe(":8000", corsHandler(r)))
 }

@@ -3,19 +3,17 @@ package routes
 import (
 	"awesomeProject/controllers"
 	"awesomeProject/service"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func ProjectRoutes(r *mux.Router, db *gorm.DB) {
+func ProjectRoutes(e *echo.Echo, db *gorm.DB) {
 	projectService := service.NewProjectService(db)
-	projectController := controllers.ProjectController{
-		Service: projectService,
-	}
+	projectController := controllers.NewProjectController(projectService)
 
-	r.HandleFunc("/project", projectController.GetProjects).Methods("GET")
-	r.HandleFunc("/project/{id:[0-9]+}", projectController.GetProjectByID).Methods("GET")
-	r.HandleFunc("/project", projectController.CreateProject).Methods("POST")
-	r.HandleFunc("/project/{id:[0-9]+}", projectController.UpdateProject).Methods("PUT")
-	r.HandleFunc("/project/{id:[0-9]+}", projectController.DeleteProject).Methods("DELETE")
+	e.GET("/project", projectController.GetProjects)
+	e.GET("/project/:id", projectController.GetProjectByID)
+	e.POST("/project", projectController.CreateProject)
+	e.PUT("/project/:id", projectController.UpdateProject)
+	e.DELETE("/project/:id", projectController.DeleteProject)
 }

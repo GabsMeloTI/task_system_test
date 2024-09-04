@@ -3,19 +3,19 @@ package routes
 import (
 	"awesomeProject/controllers"
 	"awesomeProject/service"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func CommentRoutes(r *mux.Router, db *gorm.DB) {
+func CommentRoutes(e *echo.Echo, db *gorm.DB) {
 	commentService := service.NewCommentService(db)
 	commentController := &controllers.CommentController{
 		Service: commentService,
 	}
 
-	r.HandleFunc("/comment", commentController.GetComments).Methods("GET")
-	r.HandleFunc("/comment/{id:[0-9]+}", commentController.GetCommentByID).Methods("GET")
-	r.HandleFunc("/comment", commentController.CreateComment).Methods("POST")
-	r.HandleFunc("/comment/{id:[0-9]+}", commentController.UpdateComment).Methods("PUT")
-	r.HandleFunc("/comment/{id:[0-9]+}", commentController.DeleteComment).Methods("DELETE")
+	e.GET("/comment", commentController.GetComments)
+	e.GET("/comment/:id", commentController.GetCommentByID)
+	e.POST("/comment", commentController.CreateComment)
+	e.PUT("/comment/:id", commentController.UpdateComment)
+	e.DELETE("/comment/:id", commentController.DeleteComment)
 }

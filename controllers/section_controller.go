@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/models"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -13,23 +12,27 @@ type SectionController struct {
 	Service service.SectionService
 }
 
+func NewSectionController(svc service.SectionService) *SectionController {
+	return &SectionController{
+		Service: svc,
+	}
+}
+
 // GetSections retrieves all sections
 // @Summary Get all sections
 // @Description Fetches all sections available in the system
 // @Tags sections
 // @Produce json
-// @Success 200 {array} section_dto.SectionListingDTO
+// @Success 200 {array} models.Section
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /section [get]
-func (c *SectionController) GetSections(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) GetSections(ctx echo.Context) error {
 	sections, err := c.Service.GetSections()
 	if err != nil {
-		http.Error(w, "Error fetching sections", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, "Error fetching sections")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sections)
+	return ctx.JSON(http.StatusOK, sections)
 }
 
 // GetSectionByID retrieves a section by its ID
@@ -38,23 +41,21 @@ func (c *SectionController) GetSections(w http.ResponseWriter, r *http.Request) 
 // @Tags sections
 // @Produce json
 // @Param id path string true "Section ID"
-// @Success 200 {array} section_dto.SectionListingDTO
-// @Success 200 {array} project_dto.ProjectBasicDTO
-// @Success 200 {array} user_dto.UserBasicDTO
+// @Success 200 {object} models.Section
 // @Failure 404 {string} string "Section not found"
 // @Router /section/{id} [get]
-func (c *SectionController) GetSectionByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *SectionController) GetSectionByID(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
+	}
 
 	section, err := c.Service.GetSectionByID(uint(id))
 	if err != nil {
-		http.Error(w, "Section not found", http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, "Section not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(section)
+	return ctx.JSON(http.StatusOK, section)
 }
 
 // CreateSection creates a new section
@@ -68,22 +69,18 @@ func (c *SectionController) GetSectionByID(w http.ResponseWriter, r *http.Reques
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /section [post]
-func (c *SectionController) CreateSection(w http.ResponseWriter, r *http.Request) {
+func (c *SectionController) CreateSection(ctx echo.Context) error {
 	var section models.Section
 
-	err := json.NewDecoder(r.Body).Decode(&section)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&section); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.CreateSection(section)
-	if err != nil {
-		http.Error(w, "Error creating section", http.StatusInternalServerError)
-		return
+	if err := c.Service.CreateSection(section); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error creating section")
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.NoContent(http.StatusCreated)
 }
 
 // UpdateSection updates an existing section
@@ -98,24 +95,22 @@ func (c *SectionController) CreateSection(w http.ResponseWriter, r *http.Request
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /section/{id} [put]
-func (c *SectionController) UpdateSection(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *SectionController) UpdateSection(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
+	}
 
 	var section models.Section
-	err := json.NewDecoder(r.Body).Decode(&section)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&section); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.UpdateSection(uint(id), section)
-	if err != nil {
-		http.Error(w, "Error updating section", http.StatusInternalServerError)
-		return
+	if err := c.Service.UpdateSection(uint(id), section); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error updating section")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteSection deletes a section by its ID
@@ -126,15 +121,15 @@ func (c *SectionController) UpdateSection(w http.ResponseWriter, r *http.Request
 // @Success 204 "Section deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /section/{id} [delete]
-func (c *SectionController) DeleteSection(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
-
-	err := c.Service.DeleteSection(uint(id))
+func (c *SectionController) DeleteSection(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(w, "Error deleting section", http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusBadRequest, "Invalid ID format")
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	if err := c.Service.DeleteSection(uint(id)); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Error deleting section")
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }

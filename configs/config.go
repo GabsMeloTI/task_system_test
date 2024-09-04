@@ -29,11 +29,11 @@ type DBConfig struct {
 
 func init() {
 	viper.SetDefault("api.port", "8000")
-	viper.SetDefault("database.host", "localhost")
+	viper.SetDefault("database.host", "db_go")
 	viper.SetDefault("database.port", "5432")
 	viper.SetDefault("database.user", "postgres")
 	viper.SetDefault("database.pass", "091104")
-	viper.SetDefault("database.database", "mydb")
+	viper.SetDefault("database.database", "PostgreSQL 16")
 
 	viper.AutomaticEnv()
 }

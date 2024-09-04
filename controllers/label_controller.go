@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/models"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -21,15 +20,13 @@ type LabelController struct {
 // @Success 200 {array} label_dto.LabelListingDTO
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /label [get]
-func (c *LabelController) GetLabels(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) GetLabels(ctx echo.Context) error {
 	labelsDTO, err := c.Service.GetAllLabels()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(labelsDTO)
+	return ctx.JSON(http.StatusOK, labelsDTO)
 }
 
 // GetLabelByID retrieves a label by its ID
@@ -41,18 +38,15 @@ func (c *LabelController) GetLabels(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} label_dto.LabelListingDTO
 // @Failure 404 {string} string "Label not found"
 // @Router /label/{id} [get]
-func (c *LabelController) GetLabelByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *LabelController) GetLabelByID(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	labelDTO, err := c.Service.GetLabelByID(uint(id))
 	if err != nil {
-		http.Error(w, "Label not found", http.StatusNotFound)
-		return
+		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "Label not found"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(labelDTO)
+	return ctx.JSON(http.StatusOK, labelDTO)
 }
 
 // CreateLabel creates a new label
@@ -66,21 +60,18 @@ func (c *LabelController) GetLabelByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /label [post]
-func (c *LabelController) CreateLabel(w http.ResponseWriter, r *http.Request) {
+func (c *LabelController) CreateLabel(ctx echo.Context) error {
 	var label models.Label
 
-	if err := json.NewDecoder(r.Body).Decode(&label); err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&label); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data"})
 	}
 
-	err := c.Service.CreateLabel(label)
-	if err != nil {
-		http.Error(w, "Failed to create label", http.StatusInternalServerError)
-		return
+	if err := c.Service.CreateLabel(label); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create label"})
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.JSON(http.StatusCreated, "Label created successfully")
 }
 
 // UpdateLabel updates an existing label
@@ -95,24 +86,19 @@ func (c *LabelController) CreateLabel(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /label/{id} [put]
-func (c *LabelController) UpdateLabel(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *LabelController) UpdateLabel(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	var label models.Label
-
-	if err := json.NewDecoder(r.Body).Decode(&label); err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&label); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data"})
 	}
 
-	err := c.Service.UpdateLabel(uint(id), label)
-	if err != nil {
-		http.Error(w, "Failed to update label", http.StatusInternalServerError)
-		return
+	if err := c.Service.UpdateLabel(uint(id), label); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update label"})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteLabel deletes a label by its ID
@@ -123,15 +109,12 @@ func (c *LabelController) UpdateLabel(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "Label deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /label/{id} [delete]
-func (c *LabelController) DeleteLabel(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *LabelController) DeleteLabel(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
-	err := c.Service.DeleteLabel(uint(id))
-	if err != nil {
-		http.Error(w, "Failed to delete label", http.StatusInternalServerError)
-		return
+	if err := c.Service.DeleteLabel(uint(id)); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete label"})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }

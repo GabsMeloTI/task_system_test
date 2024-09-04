@@ -3,8 +3,7 @@ package controllers
 import (
 	"awesomeProject/models"
 	"awesomeProject/service"
-	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -24,15 +23,13 @@ type TaskController struct {
 // @Success 200 {array} label_dto.LabelListingDTO
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task [get]
-func (c *TaskController) GetTasks(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) GetTasks(ctx echo.Context) error {
 	tasksDTO, err := c.Service.GetAllTasks()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasksDTO)
+	return ctx.JSON(http.StatusOK, tasksDTO)
 }
 
 // GetTaskByID retrieves a task by its ID
@@ -47,18 +44,15 @@ func (c *TaskController) GetTasks(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} label_dto.LabelListingDTO
 // @Failure 404 {string} string "Task not found"
 // @Router /task/{id} [get]
-func (c *TaskController) GetTaskByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *TaskController) GetTaskByID(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	taskDTO, err := c.Service.GetTaskByID(uint(id))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
+		return ctx.String(http.StatusNotFound, err.Error())
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(taskDTO)
+	return ctx.JSON(http.StatusOK, taskDTO)
 }
 
 // CreateTask creates a new task
@@ -72,22 +66,18 @@ func (c *TaskController) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task [post]
-func (c *TaskController) CreateTask(w http.ResponseWriter, r *http.Request) {
+func (c *TaskController) CreateTask(ctx echo.Context) error {
 	var task models.Task
 
-	err := json.NewDecoder(r.Body).Decode(&task)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&task); err != nil {
+		return ctx.String(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.CreateTask(task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.CreateTask(task); err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return ctx.String(http.StatusCreated, "Task created successfully")
 }
 
 // UpdateTask updates an existing task
@@ -102,24 +92,19 @@ func (c *TaskController) CreateTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task/{id} [put]
-func (c *TaskController) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *TaskController) UpdateTask(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
 	var task models.Task
-	err := json.NewDecoder(r.Body).Decode(&task)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&task); err != nil {
+		return ctx.String(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.UpdateTask(uint(id), task)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.UpdateTask(uint(id), task); err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // DeleteTask deletes a task by its ID
@@ -130,17 +115,14 @@ func (c *TaskController) UpdateTask(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "Task deleted successfully"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task/{id} [delete]
-func (c *TaskController) DeleteTask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id, _ := strconv.ParseUint(params["id"], 10, 32)
+func (c *TaskController) DeleteTask(ctx echo.Context) error {
+	id, _ := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
-	err := c.Service.DeleteTask(uint(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.DeleteTask(uint(id)); err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // AssignLabelsToTask assigns labels to a task
@@ -155,22 +137,17 @@ func (c *TaskController) DeleteTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Invalid data"
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task/{task_id}/labels [post]
-func (c *TaskController) AssignLabelsToTask(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	taskID, _ := strconv.ParseUint(params["task_id"], 10, 32)
+func (c *TaskController) AssignLabelsToTask(ctx echo.Context) error {
+	taskID, _ := strconv.ParseUint(ctx.Param("task_id"), 10, 32)
 
 	var labels []models.Label
-	err := json.NewDecoder(r.Body).Decode(&labels)
-	if err != nil {
-		http.Error(w, "Invalid data", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&labels); err != nil {
+		return ctx.String(http.StatusBadRequest, "Invalid data")
 	}
 
-	err = c.Service.AssignLabelsToTask(uint(taskID), labels)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := c.Service.AssignLabelsToTask(uint(taskID), labels); err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return ctx.NoContent(http.StatusNoContent)
 }

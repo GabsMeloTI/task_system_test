@@ -1,0 +1,31 @@
+version: '1.0'
+
+services:
+  go_db:
+    container_name: go_db
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: "PostgreSQL 16"
+    ports:
+        - "5432:5432"
+    volumes:
+        - postgres_data:/var/lib/postgresql/data
+
+  go-app:
+    container_name: go-app
+    environment:
+      - AWS_ACCESS_KEY_ID=your_access_key_id
+      - AWS_SECRET_ACCESS_KEY=your_secret_access_key
+      - AWS_REGION=your_aws_region
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - go_db
+
+volumes:
+  postgres_data:

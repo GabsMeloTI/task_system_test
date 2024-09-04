@@ -1,19 +1,19 @@
 package routes
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"log"
 )
 
-func RegisterRoutes(r *mux.Router, db *gorm.DB) {
+func RegisterRoutes(e *echo.Echo, db *gorm.DB) {
 	log.Println("Registrando rotas")
-	UserRoutes(r, db)
-	ProjectRoutes(r, db)
-	SectionRoutes(r, db)
-	TaskRoutes(r, db)
-	SubtaskRoutes(r, db)
-	LabelRoutes(r, db)
-	CommentRoutes(r, db)
+	UserRoutes(e, db)
+	ProjectRoutes(e, db)
+	SectionRoutes(e, db)
+	TaskRoutes(e, db)
+	SubtaskRoutes(e, db)
+	LabelRoutes(e, db)
+	CommentRoutes(e, db)
 	log.Println("Rotas registradas com sucesso")
 }
