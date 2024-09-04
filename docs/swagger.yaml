@@ -1,0 +1,1324 @@
+definitions:
+  comment_dto.CommentListingDTO:
+    properties:
+      content:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      published_at:
+        type: string
+      task:
+        $ref: '#/definitions/task_dto.TaskBasicDTO'
+      user:
+        $ref: '#/definitions/user_dto.UserBasicDTO'
+    type: object
+  label_dto.LabelListingDTO:
+    properties:
+      color:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.AuthResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  models.Comment:
+    properties:
+      content:
+        type: string
+      image:
+        type: string
+      published_at:
+        type: string
+      task:
+        $ref: '#/definitions/models.Task'
+      task_id:
+        type: integer
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
+    type: object
+  models.Label:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+    type: object
+  models.LoginRequest:
+    description: Dados de login do usuário
+    properties:
+      email:
+        description: |-
+          @Param email body string true "Email do usuário"
+          @Param password body string true "Senha do usuário"
+        type: string
+      password:
+        type: string
+    type: object
+  models.Priority:
+    enum:
+    - disaster
+    - high
+    - average
+    - warning
+    type: string
+    x-enum-varnames:
+    - PriorityDisaster
+    - PriorityHigh
+    - PriorityAverage
+    - PriorityWarning
+  models.Project:
+    properties:
+      description:
+        type: string
+      sections:
+        items:
+          $ref: '#/definitions/models.Section'
+        type: array
+      status:
+        type: string
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
+    type: object
+  models.Section:
+    properties:
+      description:
+        type: string
+      project:
+        $ref: '#/definitions/models.Project'
+      project_id:
+        type: integer
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
+    type: object
+  models.Subtask:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      status:
+        type: string
+      task:
+        $ref: '#/definitions/models.Task'
+      task_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.Task:
+    properties:
+      description:
+        type: string
+      expected_completion:
+        type: string
+      labels:
+        items:
+          $ref: '#/definitions/models.Label'
+        type: array
+      priority:
+        $ref: '#/definitions/models.Priority'
+      section:
+        $ref: '#/definitions/models.Section'
+      section_id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
+    type: object
+  models.User:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  project_dto.ProjectBasicDTO:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  project_dto.ProjectListingDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/user_dto.UserBasicDTO'
+    type: object
+  section_dto.SectionBasicDTO:
+    properties:
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  section_dto.SectionListingDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      project:
+        $ref: '#/definitions/project_dto.ProjectBasicDTO'
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/user_dto.UserBasicDTO'
+    type: object
+  subtask_dto.SubtaskListingDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      task:
+        $ref: '#/definitions/task_dto.TaskBasicDTO'
+      title:
+        type: string
+    type: object
+  task_dto.TaskBasicDTO:
+    properties:
+      id:
+        type: integer
+      priority:
+        $ref: '#/definitions/models.Priority'
+      title:
+        type: string
+    type: object
+  task_dto.TaskListingDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      expected_completion:
+        type: string
+      id:
+        type: integer
+      labels:
+        items:
+          $ref: '#/definitions/label_dto.LabelListingDTO'
+        type: array
+      priority:
+        $ref: '#/definitions/models.Priority'
+      section:
+        $ref: '#/definitions/section_dto.SectionBasicDTO'
+      status:
+        type: string
+      title:
+        type: string
+      user:
+        $ref: '#/definitions/user_dto.UserBasicDTO'
+    type: object
+  user_dto.UserBasicDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  user_dto.UserListingDTO:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      photo:
+        type: string
+      project_count:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /comment:
+    get:
+      description: Fetches all comments available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user_dto.UserBasicDTO'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all comments
+      tags:
+      - comments
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creates a new comment with the provided details, including optional
+        image upload
+      parameters:
+      - description: Content of the comment
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: ID of the user creating the comment
+        in: formData
+        name: user_id
+        required: true
+        type: integer
+      - description: ID of the task associated with the comment
+        in: formData
+        name: task_id
+        required: true
+        type: integer
+      - description: Optional image file
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Comment created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new comment
+      tags:
+      - comments
+  /comment/{id}:
+    delete:
+      description: Deletes an existing comment from the system by its ID
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Comment deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a comment by ID
+      tags:
+      - comments
+    get:
+      description: Fetches the details of a specific comment by its ID
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user_dto.UserBasicDTO'
+            type: array
+        "404":
+          description: Comment not found
+          schema:
+            type: string
+      summary: Get a comment by ID
+      tags:
+      - comments
+    put:
+      consumes:
+      - application/json
+      description: Updates the content and optional image URL of an existing comment
+        by its ID
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated comment data
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/models.Comment'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Comment updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a comment
+      tags:
+      - comments
+  /label:
+    get:
+      description: Fetches all labels available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/label_dto.LabelListingDTO'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all labels
+      tags:
+      - labels
+    post:
+      consumes:
+      - application/json
+      description: Creates a new label with the provided details
+      parameters:
+      - description: Label data
+        in: body
+        name: label
+        required: true
+        schema:
+          $ref: '#/definitions/models.Label'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Label created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new label
+      tags:
+      - labels
+  /label/{id}:
+    delete:
+      description: Deletes an existing label from the system by its ID
+      parameters:
+      - description: Label ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Label deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a label by ID
+      tags:
+      - labels
+    get:
+      description: Fetches the details of a specific label by its ID
+      parameters:
+      - description: Label ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/label_dto.LabelListingDTO'
+            type: array
+        "404":
+          description: Label not found
+          schema:
+            type: string
+      summary: Get a label by ID
+      tags:
+      - labels
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing label by its ID
+      parameters:
+      - description: Label ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated label data
+        in: body
+        name: label
+        required: true
+        schema:
+          $ref: '#/definitions/models.Label'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Label updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a label
+      tags:
+      - labels
+  /project:
+    get:
+      description: Fetches all projects available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user_dto.UserBasicDTO'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Creates a new project with the provided details
+      parameters:
+      - description: Project data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/models.Project'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Project created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new project
+      tags:
+      - projects
+  /project/{id}:
+    delete:
+      description: Deletes an existing project from the system by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Project deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a project by ID
+      tags:
+      - projects
+    get:
+      description: Fetches the details of a specific project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user_dto.UserBasicDTO'
+        "404":
+          description: Project not found
+          schema:
+            type: string
+      summary: Get a project by ID
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated project data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/models.Project'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Project updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a project
+      tags:
+      - projects
+  /section:
+    get:
+      description: Fetches all sections available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/section_dto.SectionListingDTO'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all sections
+      tags:
+      - sections
+    post:
+      consumes:
+      - application/json
+      description: Creates a new section with the provided details
+      parameters:
+      - description: Section data
+        in: body
+        name: section
+        required: true
+        schema:
+          $ref: '#/definitions/models.Section'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Section created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new section
+      tags:
+      - sections
+  /section/{id}:
+    delete:
+      description: Deletes an existing section from the system by its ID
+      parameters:
+      - description: Section ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Section deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a section by ID
+      tags:
+      - sections
+    get:
+      description: Fetches the details of a specific section by its ID
+      parameters:
+      - description: Section ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user_dto.UserBasicDTO'
+            type: array
+        "404":
+          description: Section not found
+          schema:
+            type: string
+      summary: Get a section by ID
+      tags:
+      - sections
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing section by its ID
+      parameters:
+      - description: Section ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated section data
+        in: body
+        name: section
+        required: true
+        schema:
+          $ref: '#/definitions/models.Section'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Section updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a section
+      tags:
+      - sections
+  /subtask:
+    get:
+      description: Fetches all subtasks available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task_dto.TaskBasicDTO'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all subtasks
+      tags:
+      - subtasks
+    post:
+      consumes:
+      - application/json
+      description: Creates a new subtask with the provided details
+      parameters:
+      - description: Subtask data
+        in: body
+        name: subtask
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subtask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Subtask created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new subtask
+      tags:
+      - subtasks
+  /subtask/{id}:
+    delete:
+      description: Deletes an existing subtask from the system by its ID
+      parameters:
+      - description: Subtask ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Subtask deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a subtask by ID
+      tags:
+      - subtasks
+    get:
+      description: Fetches the details of a specific subtask by its ID
+      parameters:
+      - description: Subtask ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task_dto.TaskBasicDTO'
+            type: array
+        "404":
+          description: Subtask not found
+          schema:
+            type: string
+      summary: Get a subtask by ID
+      tags:
+      - subtasks
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing subtask by its ID
+      parameters:
+      - description: Subtask ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated subtask data
+        in: body
+        name: subtask
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subtask'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Subtask updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a subtask
+      tags:
+      - subtasks
+  /task:
+    get:
+      description: Fetches all tasks available in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/label_dto.LabelListingDTO'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get all tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Creates a new task with the provided details
+      parameters:
+      - description: Task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Task created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new task
+      tags:
+      - tasks
+  /task/{id}:
+    delete:
+      description: Deletes an existing task from the system by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Task deleted successfully
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a task by ID
+      tags:
+      - tasks
+    get:
+      description: Fetches the details of a specific task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/label_dto.LabelListingDTO'
+            type: array
+        "404":
+          description: Task not found
+          schema:
+            type: string
+      summary: Get a task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Task updated successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a task
+      tags:
+      - tasks
+  /task/{task_id}/labels:
+    post:
+      consumes:
+      - application/json
+      description: Associates a set of labels with a specific task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: List of labels
+        in: body
+        name: labels
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.Label'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Labels assigned successfully
+        "400":
+          description: Invalid data
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Assign labels to a task
+      tags:
+      - tasks
+  /user:
+    get:
+      description: Retorna uma lista de usuários
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user_dto.UserListingDTO'
+            type: array
+        "500":
+          description: Erro interno do servidor
+          schema:
+            type: string
+      summary: Lista todos os usuários
+      tags:
+      - users
+    post:
+      consumes:
+      - multipart/form-data
+      description: Cria um novo usuário com os dados fornecidos
+      parameters:
+      - description: Nome do Usuário
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Email do Usuário
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Senha do Usuário
+        in: formData
+        name: password
+        required: true
+        type: string
+      - description: Imagem do Avatar do Usuário
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Usuário criado com sucesso
+          schema:
+            type: string
+        "400":
+          description: Erro na solicitação
+          schema:
+            type: string
+      summary: Cria um novo usuário
+      tags:
+      - users
+  /user/{id}:
+    delete:
+      description: Exclui um usuário pelo ID
+      parameters:
+      - description: ID do Usuário
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Usuário excluído com sucesso
+        "500":
+          description: Erro interno do servidor
+          schema:
+            type: string
+      summary: Exclui um usuário
+      tags:
+      - users
+    get:
+      description: Obtém os detalhes de um usuário específico pelo seu ID
+      parameters:
+      - description: ID do Usuário
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user_dto.UserListingDTO'
+            type: array
+        "404":
+          description: Usuário não encontrado
+          schema:
+            type: string
+      summary: Retorna um usuário por ID
+      tags:
+      - users
+    put:
+      consumes:
+      - multipart/form-data
+      description: Atualiza os detalhes de um usuário específico pelo seu ID
+      parameters:
+      - description: ID do Usuário
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Nome do Usuário
+        in: formData
+        name: name
+        type: string
+      - description: Email do Usuário
+        in: formData
+        name: email
+        type: string
+      - description: Senha do Usuário
+        in: formData
+        name: password
+        type: string
+      - description: Imagem do Avatar do Usuário
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Usuário atualizado com sucesso
+        "400":
+          description: Erro na solicitação
+          schema:
+            type: string
+        "500":
+          description: Erro interno do servidor
+          schema:
+            type: string
+      summary: Atualiza os dados de um usuário
+      tags:
+      - users
+  /user/{id}/avatar:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update the profile image of a user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Avatar image file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "500":
+          description: Failed to update user image
+          schema:
+            type: string
+      summary: Update a user's profile image
+      tags:
+      - users
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: User Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Login a user
+      tags:
+      - users
+  /user/register:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Register a new user with an optional avatar image
+      parameters:
+      - description: User Name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: User Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: User Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      - description: Avatar image file
+        in: formData
+        name: avatar
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Invalid request payload
+          schema:
+            type: string
+        "500":
+          description: Failed to register user
+          schema:
+            type: string
+      summary: Register a new user
+      tags:
+      - users
+swagger: "2.0"
