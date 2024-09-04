@@ -6,7 +6,7 @@ import (
 )
 
 type Comment struct {
-	gorm.Model
+	gorm.Model  `swaggerignore:"true"`
 	Content     string    `gorm:"type:text;not null" json:"content"`
 	PublishedAt time.Time `gorm:"type:timestamptz;not null" json:"published_at"`
 	Image       string    `gorm:"type:varchar(255)" json:"image"`

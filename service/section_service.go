@@ -40,8 +40,9 @@ func (s *sectionService) GetSections() ([]section_dto.SectionListingDTO, error) 
 			Description: section.Description,
 			CreatedAt:   section.CreatedAt,
 			User: user_dto.UserBasicDTO{
-				ID:   section.User.ID,
-				Name: section.User.Name,
+				ID:    section.User.ID,
+				Name:  section.User.Name,
+				Email: section.User.Email,
 			},
 			Project: project_dto.ProjectBasicDTO{
 				ID:     section.Project.ID,
@@ -69,8 +70,9 @@ func (s *sectionService) GetSectionByID(id uint) (section_dto.SectionListingDTO,
 		Description: section.Description,
 		CreatedAt:   section.CreatedAt,
 		User: user_dto.UserBasicDTO{
-			ID:   section.User.ID,
-			Name: section.User.Name,
+			ID:    section.User.ID,
+			Name:  section.User.Name,
+			Email: section.User.Email,
 		},
 		Project: project_dto.ProjectBasicDTO{
 			ID:     section.Project.ID,

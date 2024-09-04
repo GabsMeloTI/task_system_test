@@ -2,26 +2,21 @@ package routes
 
 import (
 	"awesomeProject/controllers"
+	"awesomeProject/service"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-// registra as rotas relacionadas a usuários
-func TaskRoutes(r *mux.Router) {
-	// retorna todos os usuários
-	r.HandleFunc("/task", controllers.GetTasks).Methods("GET")
+func TaskRoutes(r *mux.Router, db *gorm.DB) {
+	taskService := service.NewTaskService(db)
+	taskController := &controllers.TaskController{
+		Service: (*service.TaskService)(taskService),
+	}
 
-	// retorna usuário específico por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.GetTaskByID).Methods("GET")
-
-	// criar um novo usuário
-	r.HandleFunc("/task", controllers.CreateTask).Methods("POST")
-
-	// criar um novo usuário
-	r.HandleFunc("/task/{id:[0-9]+}/label", controllers.AssignLabelsToTask).Methods("POST")
-
-	// atualiza usuário existente por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.UpdateTask).Methods("PUT")
-
-	// deletar um usuário existente por id
-	r.HandleFunc("/task/{id:[0-9]+}", controllers.DeleteTask).Methods("DELETE")
+	r.HandleFunc("/task", taskController.GetTasks).Methods("GET")
+	r.HandleFunc("/task/{id:[0-9]+}", taskController.GetTaskByID).Methods("GET")
+	r.HandleFunc("/task", taskController.CreateTask).Methods("POST")
+	r.HandleFunc("/task/{id:[0-9]+}/label", taskController.AssignLabelsToTask).Methods("POST")
+	r.HandleFunc("/task/{id:[0-9]+}", taskController.UpdateTask).Methods("PUT")
+	r.HandleFunc("/task/{id:[0-9]+}", taskController.DeleteTask).Methods("DELETE")
 }

@@ -2,23 +2,20 @@ package routes
 
 import (
 	"awesomeProject/controllers"
+	"awesomeProject/service"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-// registra as rotas relacionadas a usuários
-func CommentRoutes(r *mux.Router) {
-	// retorna todos os usuários
-	r.HandleFunc("/comment", controllers.GetComments).Methods("GET")
+func CommentRoutes(r *mux.Router, db *gorm.DB) {
+	commentService := service.NewCommentService(db)
+	commentController := &controllers.CommentController{
+		Service: commentService,
+	}
 
-	// retorna usuário específico por id
-	r.HandleFunc("/comment/{id:[0-9]+}", controllers.GetCommentByID).Methods("GET")
-
-	// criar um novo usuário
-	r.HandleFunc("/comment", controllers.CreateComment).Methods("POST")
-
-	// atualiza usuário existente por id
-	r.HandleFunc("/comment/{id:[0-9]+}", controllers.UpdateComment).Methods("PUT")
-
-	// deletar um usuário existente por id
-	r.HandleFunc("/comment/{id:[0-9]+}", controllers.DeleteComment).Methods("DELETE")
+	r.HandleFunc("/comment", commentController.GetComments).Methods("GET")
+	r.HandleFunc("/comment/{id:[0-9]+}", commentController.GetCommentByID).Methods("GET")
+	r.HandleFunc("/comment", commentController.CreateComment).Methods("POST")
+	r.HandleFunc("/comment/{id:[0-9]+}", commentController.UpdateComment).Methods("PUT")
+	r.HandleFunc("/comment/{id:[0-9]+}", commentController.DeleteComment).Methods("DELETE")
 }

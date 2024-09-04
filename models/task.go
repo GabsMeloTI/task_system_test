@@ -6,7 +6,7 @@ import (
 )
 
 type Task struct {
-	gorm.Model
+	gorm.Model         `swaggerignore:"true"`
 	Title              string    `gorm:"type:varchar(100);not null" json:"title"`
 	Description        string    `gorm:"type:text" json:"description"`
 	ExpectedCompletion time.Time `gorm:"type:timestamp" json:"expected_completion"`
@@ -19,8 +19,8 @@ type Task struct {
 	SectionID int     `gorm:"not null" json:"section_id"`
 	Section   Section `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"section"`
 
-	Comments []Comment `gorm:"foreignkey:TaskID" json:"comments"`
-	Subtasks []Subtask `gorm:"foreignkey:TaskID" json:"subtasks"`
+	Comments []Comment `gorm:"foreignkey:TaskID" json:"comments" swaggerignore:"true"`
+	Subtasks []Subtask `gorm:"foreignkey:TaskID" json:"subtasks" swaggerignore:"true"`
 
 	Labels []Label `gorm:"many2many:task_labels;" json:"labels"`
 }

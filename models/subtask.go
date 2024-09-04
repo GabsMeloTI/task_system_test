@@ -6,7 +6,7 @@ import (
 )
 
 type Subtask struct {
-	gorm.Model
+	gorm.Model  `swaggerignore:"true"`
 	Title       string    `gorm:"type:varchar(100);not null" json:"title"`
 	Description string    `gorm:"type:text" json:"description"`
 	CreatedAt   time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`

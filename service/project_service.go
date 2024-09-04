@@ -41,8 +41,9 @@ func (s *projectService) GetProjects() ([]project_dto.ProjectListingDTO, error) 
 			Status:      project.Status,
 			CreatedAt:   project.CreatedAt,
 			User: user_dto.UserBasicDTO{
-				ID:   project.User.ID,
-				Name: project.User.Name,
+				ID:    project.User.ID,
+				Name:  project.User.Name,
+				Email: project.User.Email,
 			},
 		}
 		projectsDTO = append(projectsDTO, projectDTO)
@@ -66,8 +67,9 @@ func (s *projectService) GetProjectByID(id uint) (project_dto.ProjectListingDTO,
 		Status:      project.Status,
 		CreatedAt:   project.CreatedAt,
 		User: user_dto.UserBasicDTO{
-			ID:   project.User.ID,
-			Name: project.User.Name,
+			ID:    project.User.ID,
+			Name:  project.User.Name,
+			Email: project.User.Email,
 		},
 	}
 

@@ -2,23 +2,20 @@ package routes
 
 import (
 	"awesomeProject/controllers"
+	"awesomeProject/service"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-// registra as rotas relacionadas a usuários
-func LabelRoutes(r *mux.Router) {
-	// retorna todos os usuários
-	r.HandleFunc("/label", controllers.GetLabels).Methods("GET")
+func LabelRoutes(r *mux.Router, db *gorm.DB) {
+	labelService := service.NewLabelService(db)
+	labelController := &controllers.LabelController{
+		Service: labelService,
+	}
 
-	// retorna usuário específico por id
-	r.HandleFunc("/label/{id:[0-9]+}", controllers.GetLabelByID).Methods("GET")
-
-	// criar um novo usuário
-	r.HandleFunc("/label/{id:[0-9]+/etiquetas", controllers.CreateLabel).Methods("POST")
-
-	// atualiza usuário existente por id
-	r.HandleFunc("/label/{id:[0-9]+}", controllers.UpdateLabel).Methods("PUT")
-
-	// deletar um usuário existente por id
-	r.HandleFunc("/label/{id:[0-9]+}", controllers.DeleteLabel).Methods("DELETE")
+	r.HandleFunc("/label", labelController.GetLabels).Methods("GET")
+	r.HandleFunc("/label/{id:[0-9]+}", labelController.GetLabelByID).Methods("GET")
+	r.HandleFunc("/label", labelController.CreateLabel).Methods("POST")
+	r.HandleFunc("/label/{id:[0-9]+}", labelController.UpdateLabel).Methods("PUT")
+	r.HandleFunc("/label/{id:[0-9]+}", labelController.DeleteLabel).Methods("DELETE")
 }

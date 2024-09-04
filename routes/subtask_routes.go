@@ -2,23 +2,20 @@ package routes
 
 import (
 	"awesomeProject/controllers"
+	"awesomeProject/service"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-// registra as rotas relacionadas a usuários
-func SubtaskRoutes(r *mux.Router) {
-	// retorna todos os usuários
-	r.HandleFunc("/subtask", controllers.GetSubtasks).Methods("GET")
+func SubtaskRoutes(r *mux.Router, db *gorm.DB) {
+	subtaskService := service.NewSubtaskService(db)
+	subtaskController := &controllers.SubtaskController{
+		Service: (*service.SubtaskService)(subtaskService),
+	}
 
-	// retorna usuário específico por id
-	r.HandleFunc("/subtask/{id:[0-9]+}", controllers.GetSubtaskByID).Methods("GET")
-
-	// criar um novo usuário
-	r.HandleFunc("/subtask", controllers.CreateSubtask).Methods("POST")
-
-	// atualiza usuário existente por id
-	r.HandleFunc("/subtask/{id:[0-9]+}", controllers.UpdateSubtask).Methods("PUT")
-
-	// deletar um usuário existente por id
-	r.HandleFunc("/subtask/{id:[0-9]+}", controllers.DeleteSubtask).Methods("DELETE")
+	r.HandleFunc("/subtask", subtaskController.GetSubtasks).Methods("GET")
+	r.HandleFunc("/subtask/{id:[0-9]+}", subtaskController.GetSubtaskByID).Methods("GET")
+	r.HandleFunc("/subtask", subtaskController.CreateSubtask).Methods("POST")
+	r.HandleFunc("/subtask/{id:[0-9]+}", subtaskController.UpdateSubtask).Methods("PUT")
+	r.HandleFunc("/subtask/{id:[0-9]+}", subtaskController.DeleteSubtask).Methods("DELETE")
 }

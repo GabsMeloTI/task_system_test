@@ -4,7 +4,6 @@ import "errors"
 
 type Priority string
 
-// Constants for Priority
 const (
 	PriorityDisaster Priority = "disaster"
 	PriorityHigh     Priority = "high"
@@ -12,7 +11,6 @@ const (
 	PriorityWarning  Priority = "warning"
 )
 
-// IsValid checks if the priority is valid
 func (p Priority) IsValid() bool {
 	switch p {
 	case PriorityDisaster, PriorityHigh, PriorityAverage, PriorityWarning:
@@ -21,7 +19,6 @@ func (p Priority) IsValid() bool {
 	return false
 }
 
-// Validate returns an error if the priority is invalid
 func (p Priority) Validate() error {
 	if !p.IsValid() {
 		return errors.New("invalid priority")

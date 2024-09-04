@@ -1,17 +1,19 @@
 package routes
 
 import (
-	_ "awesomeProject/controllers"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
+	"log"
 )
 
-// registra todas as rotas da aplicação
-func RegisterRoutes(r *mux.Router) {
-	UserRoutes(r)
-	ProjectRoutes(r)
-	SectionRoutes(r)
-	TaskRoutes(r)
-	SubtaskRoutes(r)
-	LabelRoutes(r)
-	CommentRoutes(r)
+func RegisterRoutes(r *mux.Router, db *gorm.DB) {
+	log.Println("Registrando rotas")
+	UserRoutes(r, db)
+	ProjectRoutes(r, db)
+	SectionRoutes(r, db)
+	TaskRoutes(r, db)
+	SubtaskRoutes(r, db)
+	LabelRoutes(r, db)
+	CommentRoutes(r, db)
+	log.Println("Rotas registradas com sucesso")
 }

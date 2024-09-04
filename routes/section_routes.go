@@ -2,23 +2,20 @@ package routes
 
 import (
 	"awesomeProject/controllers"
+	"awesomeProject/service"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
-// registra as rotas relacionadas a usuários
-func SectionRoutes(r *mux.Router) {
-	// retorna todos os usuários
-	r.HandleFunc("/section", controllers.GetSections).Methods("GET")
+func SectionRoutes(r *mux.Router, db *gorm.DB) {
+	sectionService := service.NewSectionService(db)
+	sectionController := controllers.SectionController{
+		Service: sectionService,
+	}
 
-	// retorna usuário específico por id
-	r.HandleFunc("/section/{id:[0-9]+}", controllers.GetSectionByID).Methods("GET")
-
-	// criar um novo usuário
-	r.HandleFunc("/section", controllers.CreateSection).Methods("POST")
-
-	// atualiza usuário existente por id
-	r.HandleFunc("/section/{id:[0-9]+}", controllers.UpdateSection).Methods("PUT")
-
-	// deletar um usuário existente por id
-	r.HandleFunc("/section/{id:[0-9]+}", controllers.DeleteSection).Methods("DELETE")
+	r.HandleFunc("/section", sectionController.GetSections).Methods("GET")
+	r.HandleFunc("/section/{id:[0-9]+}", sectionController.GetSectionByID).Methods("GET")
+	r.HandleFunc("/section", sectionController.CreateSection).Methods("POST")
+	r.HandleFunc("/section/{id:[0-9]+}", sectionController.UpdateSection).Methods("PUT")
+	r.HandleFunc("/section/{id:[0-9]+}", sectionController.DeleteSection).Methods("DELETE")
 }

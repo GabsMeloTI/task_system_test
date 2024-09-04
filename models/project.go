@@ -5,7 +5,7 @@ import (
 )
 
 type Project struct {
-	gorm.Model
+	gorm.Model  `swaggerignore:"true"`
 	Title       string `gorm:"type:varchar(100);not null" json:"title"`
 	Description string `gorm:"type:text" json:"description"`
 	Status      string `gorm:"type:varchar(50)" json:"status"`

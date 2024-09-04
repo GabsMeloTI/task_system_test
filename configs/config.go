@@ -35,7 +35,6 @@ func init() {
 	viper.SetDefault("database.pass", "091104")
 	viper.SetDefault("database.database", "mydb")
 
-	// Permite que variáveis de ambiente sobrescrevam os valores do arquivo de configuração
 	viper.AutomaticEnv()
 }
 

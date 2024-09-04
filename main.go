@@ -3,28 +3,35 @@ package main
 import (
 	"awesomeProject/configs"
 	"awesomeProject/db"
-	"awesomeProject/models"
+	_ "awesomeProject/docs"
 	"awesomeProject/routes"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"
 )
 
 func main() {
-	if err := configs.Load(); err != nil {
-		log.Fatalf("Erro ao carregar configurações: %v", err)
-	}
-
+	configs.InitS3Client()
 	db.InitGorm()
 
-	if err := db.DB.AutoMigrate(&models.User{}, &models.Project{}, &models.Section{},
-		&models.Task{}, &models.Subtask{}, &models.Comment{}, &models.Label{}).Error; err != nil {
-		log.Fatalf("Erro ao migrar as tabelas: %v", err)
+	if db.DB == nil {
+		log.Fatal("Conexão com o banco de dados falhou. Variável DB é nil.")
 	}
 
-	r := mux.NewRouter()
-	routes.RegisterRoutes(r)
+	db.MigrateTables()
 
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+	)
+
+	r := mux.NewRouter()
+	routes.RegisterRoutes(r, db.DB)
+
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 	log.Println("Iniciando o servidor na porta 8000...")
-	log.Fatal(http.ListenAndServe(":8000", r))
+	log.Fatal(http.ListenAndServe(":8000", corsHandler(r)))
 }

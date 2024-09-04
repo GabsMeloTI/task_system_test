@@ -1,49 +1,96 @@
 package service
 
 import (
-	"awesomeProject/db"
+	"awesomeProject/configs"
+	"awesomeProject/dto/user_dto"
 	"awesomeProject/models"
 	"awesomeProject/utils"
 	"errors"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/dgrijalva/jwt-go"
+	"gorm.io/gorm"
+	"mime/multipart"
+	"path/filepath"
 	"time"
 )
 
 var jwtKey = []byte("your_secret_key")
 
 type UserService interface {
-	GetUsers() ([]models.User, error)
-	GetUserByID(id string) (models.User, error)
-	CreateUser(user *models.User) error
-	UpdateUser(id string, user *models.User) error
+	GetUsers() ([]user_dto.UserListingDTO, error)
+	GetUserByID(id string) (user_dto.UserListingDTO, error)
+	CreateUser(user *models.User, imageFile multipart.File, imageFileName string) error
+	UpdateUser(id string, user *models.User, imageFile multipart.File, imageFileName string) error
 	DeleteUser(id string) error
 	Login(email, password string) (string, error)
-	RegisterUser(user *models.User) error
+	RegisterUser(user *models.User, imageFile multipart.File, imageFileName string) error
+	UpdateUserImage(id string, file multipart.File, imageFileName string) error
 }
 
-type userService struct{}
-
-func NewUserService() UserService {
-	return &userService{}
+type userService struct {
+	db *gorm.DB
 }
 
-func (s *userService) GetUsers() ([]models.User, error) {
+func NewUserService(db *gorm.DB) UserService {
+	return &userService{db: db}
+}
+
+func (s *userService) GetUsers() ([]user_dto.UserListingDTO, error) {
 	var users []models.User
-	err := db.DB.Preload("Projects").Find(&users).Error
-	return users, err
+	var usersDto []user_dto.UserListingDTO
+
+	err := s.db.Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		userDto := user_dto.UserListingDTO{
+			ID:        user.ID,
+			CreatedAt: user.CreatedAt,
+			Name:      user.Name,
+			Email:     user.Email,
+			Photo:     user.Avatar,
+		}
+		usersDto = append(usersDto, userDto)
+	}
+
+	return usersDto, nil
 }
 
-func (s *userService) GetUserByID(id string) (models.User, error) {
+func (s *userService) GetUserByID(id string) (user_dto.UserListingDTO, error) {
 	var user models.User
-	err := db.DB.Preload("Projects").First(&user, id).Error
-	return user, err
+	err := s.db.First(&user, id).Error
+	if err != nil {
+		return user_dto.UserListingDTO{}, err
+	}
+
+	userDto := user_dto.UserListingDTO{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		Name:      user.Name,
+		Email:     user.Email,
+		Photo:     user.Avatar,
+	}
+
+	return userDto, nil
 }
 
-func (s *userService) CreateUser(user *models.User) error {
+func (s *userService) CreateUser(user *models.User, imageFile multipart.File, imageFileName string) error {
 	var existingUser models.User
-	err := db.DB.Where("email = ?", user.Email).First(&existingUser).Error
+	err := s.db.Where("email = ?", user.Email).First(&existingUser).Error
 	if err == nil {
 		return errors.New("email already registered")
+	}
+
+	if imageFile != nil {
+		imageURL, err := uploadFileToS3(imageFile, imageFileName)
+		if err != nil {
+			return err
+		}
+		user.Avatar = imageURL
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
@@ -52,30 +99,38 @@ func (s *userService) CreateUser(user *models.User) error {
 	}
 	user.Password = hashedPassword
 
-	return db.DB.Create(user).Error
+	return s.db.Create(user).Error
 }
 
-func (s *userService) UpdateUser(id string, user *models.User) error {
+func (s *userService) UpdateUser(id string, user *models.User, imageFile multipart.File, imageFileName string) error {
 	var existingUser models.User
-	err := db.DB.First(&existingUser, id).Error
+	err := s.db.First(&existingUser, id).Error
 	if err != nil {
 		return err
 	}
 
-	return db.DB.Model(&existingUser).Updates(user).Error
+	if imageFile != nil {
+		imageURL, err := uploadFileToS3(imageFile, imageFileName)
+		if err != nil {
+			return err
+		}
+		user.Avatar = imageURL
+	}
+
+	return s.db.Model(&existingUser).Updates(user).Error
 }
 
 func (s *userService) DeleteUser(id string) error {
-	return db.DB.Delete(&models.User{}, id).Error
+	return s.db.Delete(&models.User{}, id).Error
 }
 
-func (s *userService) RegisterUser(user *models.User) error {
-	return s.CreateUser(user)
+func (s *userService) RegisterUser(user *models.User, imageFile multipart.File, imageFileName string) error {
+	return s.CreateUser(user, imageFile, imageFileName)
 }
 
 func (s *userService) Login(email, password string) (string, error) {
 	var user models.User
-	err := db.DB.Where("email = ?", email).First(&user).Error
+	err := s.db.Where("email = ?", email).First(&user).Error
 	if err != nil || !utils.ComparePasswords(user.Password, password) {
 		return "", errors.New("invalid credentials")
 	}
@@ -95,4 +150,42 @@ func (s *userService) Login(email, password string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func uploadFileToS3(file multipart.File, filename string) (string, error) {
+	if configs.S3Client == nil {
+		return "", fmt.Errorf("S3 client is not initialized")
+	}
+
+	bucket := "task-sytem-upload-image" // Substitua pelo nome do seu bucket
+
+	_, err := configs.S3Client.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filepath.Base(filename)),
+		Body:   file,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload file to S3: %v", err)
+	}
+
+	imageURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, filepath.Base(filename))
+	return imageURL, nil
+}
+
+func (s *userService) UpdateUserImage(id string, imageFile multipart.File, imageFileName string) error {
+	var user models.User
+	err := s.db.First(&user, id).Error
+	if err != nil {
+		return err
+	}
+
+	if imageFile != nil {
+		imageURL, err := uploadFileToS3(imageFile, imageFileName)
+		if err != nil {
+			return err
+		}
+		user.Avatar = imageURL
+	}
+
+	return s.db.Model(&user).Update("avatar", user.Avatar).Error
 }

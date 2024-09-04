@@ -5,9 +5,16 @@ import (
 	"awesomeProject/dto/subtask_dto"
 	"awesomeProject/dto/task_dto"
 	"awesomeProject/models"
+	"gorm.io/gorm"
 )
 
-type SubtaskService struct{}
+type SubtaskService struct {
+	DB *gorm.DB
+}
+
+func NewSubtaskService(db *gorm.DB) *SubtaskService {
+	return &SubtaskService{DB: db}
+}
 
 func (s *SubtaskService) GetAllSubtasks() ([]subtask_dto.SubtaskListingDTO, error) {
 	var subtasks []models.Subtask

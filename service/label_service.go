@@ -4,9 +4,16 @@ import (
 	"awesomeProject/db"
 	"awesomeProject/dto/label_dto"
 	"awesomeProject/models"
+	"gorm.io/gorm"
 )
 
-type LabelService struct{}
+type LabelService struct {
+	DB *gorm.DB
+}
+
+func NewLabelService(db *gorm.DB) *LabelService {
+	return &LabelService{DB: db}
+}
 
 func (s *LabelService) GetAllLabels() ([]label_dto.LabelListingDTO, error) {
 	var labels []models.Label

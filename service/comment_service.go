@@ -1,22 +1,28 @@
 package service
 
 import (
+	"awesomeProject/configs"
 	"awesomeProject/db"
 	"awesomeProject/dto/comment_dto"
 	"awesomeProject/dto/task_dto"
 	"awesomeProject/dto/user_dto"
 	"awesomeProject/models"
-	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"io"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"gorm.io/gorm"
 	"mime/multipart"
+	"path/filepath"
 	"time"
 )
 
-type CommentService struct{}
+type CommentService struct {
+	DB *gorm.DB
+}
+
+func NewCommentService(db *gorm.DB) *CommentService {
+	return &CommentService{DB: db}
+}
 
 func (s *CommentService) GetAllComments() ([]comment_dto.CommentListingDTO, error) {
 	var comments []models.Comment
@@ -33,8 +39,9 @@ func (s *CommentService) GetAllComments() ([]comment_dto.CommentListingDTO, erro
 			PublishedAt: comment.PublishedAt,
 			ImageURL:    comment.Image,
 			User: user_dto.UserBasicDTO{
-				ID:   comment.User.ID,
-				Name: comment.User.Name,
+				ID:    comment.User.ID,
+				Name:  comment.User.Name,
+				Email: comment.User.Email,
 			},
 			Task: task_dto.TaskBasicDTO{
 				ID:       comment.Task.ID,
@@ -61,8 +68,9 @@ func (s *CommentService) GetCommentByID(id uint) (comment_dto.CommentListingDTO,
 		PublishedAt: comment.PublishedAt,
 		ImageURL:    comment.Image,
 		User: user_dto.UserBasicDTO{
-			ID:   comment.User.ID,
-			Name: comment.User.Name,
+			ID:    comment.User.ID,
+			Name:  comment.User.Name,
+			Email: comment.User.Email,
 		},
 		Task: task_dto.TaskBasicDTO{
 			ID:    comment.Task.ID,
@@ -73,10 +81,12 @@ func (s *CommentService) GetCommentByID(id uint) (comment_dto.CommentListingDTO,
 	return commentDTO, nil
 }
 
-func (s *CommentService) CreateComment(content string, imageURL string) error {
+func (s *CommentService) CreateComment(content string, imageURL string, userID int, taskID int) error {
 	comment := models.Comment{
 		Content:     content,
 		Image:       imageURL,
+		UserID:      userID,
+		TaskID:      taskID,
 		PublishedAt: time.Now(),
 	}
 
@@ -100,29 +110,22 @@ func (s *CommentService) DeleteComment(id uint) error {
 	return db.DB.Delete(&models.Comment{}, id).Error
 }
 
-func (s *CommentService) UploadToS3(file multipart.File, filename string) (string, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"), // ajuste para sua região
+func UploadFileToS3(file multipart.File, filename string) (string, error) {
+	if configs.S3Client == nil {
+		return "", fmt.Errorf("S3 client is not initialized")
+	}
+
+	bucket := "task-sytem-upload-image"
+
+	_, err := configs.S3Client.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filepath.Base(filename)),
+		Body:   file,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create AWS session: %w", err)
+		return "", fmt.Errorf("failed to upload file to S3: %v", err)
 	}
 
-	uploader := s3manager.NewUploader(sess)
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
-	}
-
-	result, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String("task-sytem-upload-image--use1-az4--x-s3"),
-		Key:    aws.String(fmt.Sprintf("images/%d_%s", time.Now().UnixNano(), filename)),
-		Body:   bytes.NewReader(fileBytes),
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to upload file to S3: %w", err)
-	}
-
-	return result.Location, nil
+	imageURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucket, filepath.Base(filename))
+	return imageURL, nil
 }

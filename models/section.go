@@ -5,7 +5,7 @@ import (
 )
 
 type Section struct {
-	gorm.Model
+	gorm.Model  `swaggerignore:"true"`
 	Title       string `gorm:"type:varchar(100);not null" json:"title"`
 	Description string `gorm:"type:varchar(250);not null" json:"description"`
 

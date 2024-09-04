@@ -8,10 +8,17 @@ import (
 	"awesomeProject/dto/user_dto"
 	"awesomeProject/models"
 	"errors"
+	"gorm.io/gorm"
 	_ "gorm.io/gorm"
 )
 
-type TaskService struct{}
+type TaskService struct {
+	DB *gorm.DB
+}
+
+func NewTaskService(db *gorm.DB) *TaskService {
+	return &TaskService{DB: db}
+}
 
 func (s *TaskService) GetAllTasks() ([]task_dto.TaskListingDTO, error) {
 	var tasks []models.Task
@@ -42,8 +49,9 @@ func (s *TaskService) GetAllTasks() ([]task_dto.TaskListingDTO, error) {
 			Status:             task.Status,
 			Labels:             labelsDTO,
 			User: user_dto.UserBasicDTO{
-				ID:   task.User.ID,
-				Name: task.User.Name,
+				ID:    task.User.ID,
+				Name:  task.User.Name,
+				Email: task.User.Email,
 			},
 			Section: section_dto.SectionBasicDTO{
 				ID:    task.Section.ID,
@@ -82,8 +90,9 @@ func (s *TaskService) GetTaskByID(id uint) (task_dto.TaskListingDTO, error) {
 		Status:             task.Status,
 		Labels:             labelsDTO,
 		User: user_dto.UserBasicDTO{
-			ID:   task.User.ID,
-			Name: task.User.Name,
+			ID:    task.User.ID,
+			Name:  task.User.Name,
+			Email: task.User.Email,
 		},
 		Section: section_dto.SectionBasicDTO{
 			ID:    task.Section.ID,
